@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:./data/neighbourlink.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
+    show-sql: false
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+
+server:
+  port: 8080
+  error:
+    include-message: always

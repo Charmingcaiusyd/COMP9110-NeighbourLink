@@ -1,0 +1,11 @@
+# Backend build/runtime
+backend/target/
+backend/data/*.db
+backend/*.log
+backend/.runpid
+backend/.jarpid
+
+# Frontend runtime/build
+frontend/node_modules/
+frontend/dist/
+frontend/.frontpid

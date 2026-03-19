@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  color: #132034;
+  background:
+    radial-gradient(1100px 520px at -5% -10%, rgba(249, 211, 66, 0.2), transparent 62%),
+    radial-gradient(900px 420px at 102% -15%, rgba(21, 101, 192, 0.2), transparent 65%),
+    linear-gradient(180deg, #f5f8ff 0%, #f3f6f9 44%, #eef2f7 100%);
+  line-height: 1.55;
+}
+
+a {
+  color: inherit;
+}

@@ -1,0 +1,13 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="800" rx="28" fill="#EEF3F8"/>
+  <circle cx="207" cy="161" r="119" fill="#DCE7F2"/>
+  <circle cx="996" cy="623" r="165" fill="#D7F0E6"/>
+  <rect x="176" y="238" width="830" height="316" rx="20" fill="#FFFFFF"/>
+  <rect x="238" y="301" width="385" height="24" rx="12" fill="#D6E4F0"/>
+  <rect x="238" y="346" width="301" height="18" rx="9" fill="#E3EAF1"/>
+  <rect x="238" y="387" width="336" height="18" rx="9" fill="#E3EAF1"/>
+  <rect x="678" y="289" width="268" height="176" rx="16" fill="#F2F8FC"/>
+  <rect x="718" y="338" width="186" height="16" rx="8" fill="#D4E3F0"/>
+  <text x="600" y="628" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#3D546F">Image Placeholder</text>
+  <text x="600" y="670" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#597088">Replace with your own community photo</text>
+</svg>
