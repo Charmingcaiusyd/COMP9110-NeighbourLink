@@ -9,3 +9,6 @@ backend/.jarpid
 frontend/node_modules/
 frontend/dist/
 frontend/.frontpid
+
+# Local launcher runtime artifacts
+.run/

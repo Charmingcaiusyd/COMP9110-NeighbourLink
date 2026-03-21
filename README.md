@@ -59,12 +59,12 @@ From project root:
 
 From any directory:
 ```powershell
-& "C:\Users\gs658\OneDrive\文档\New project\start-neighbourlink.cmd"
+& "C:\Users\gs658\OneDrive\文档\NeighbourLink\start-neighbourlink.cmd"
 ```
 
 Alternative (direct PowerShell script):
 ```powershell
-& "C:\Users\gs658\OneDrive\文档\New project\start-neighbourlink.ps1"
+& "C:\Users\gs658\OneDrive\文档\NeighbourLink\start-neighbourlink.ps1"
 ```
 
 Logs and process IDs are stored in:
@@ -150,3 +150,4 @@ Run minimal UC2/UC3 integration tests:
 cd backend
 mvn test
 ```
+
