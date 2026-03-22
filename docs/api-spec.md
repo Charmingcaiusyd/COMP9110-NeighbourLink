@@ -461,6 +461,68 @@ Response `200`:
 ]
 ```
 
+### 4.5 Location and Map APIs (V2)
+These endpoints support Australia address lookup, map pin reverse lookup, and route overview.
+
+#### GET `/locations/au/search`
+Query params:
+- `q` (optional, suburb/postcode/address text)
+- `limit` (optional, default 8, max 20)
+
+Response `200`:
+```json
+[
+  {
+    "source": "LOCAL_AU_TABLE",
+    "displayName": "Box Hill Library, VIC, Box Hill, VIC, 3128",
+    "address": "Box Hill Library, VIC",
+    "state": "VIC",
+    "suburb": "Box Hill",
+    "postcode": "3128",
+    "latitude": -37.8183,
+    "longitude": 145.1256
+  }
+]
+```
+
+#### GET `/locations/au/reverse`
+Query params:
+- `lat` (required)
+- `lng` (required)
+
+Response `200`:
+```json
+{
+  "source": "OPENSTREETMAP_NOMINATIM",
+  "displayName": "999 Whitehorse Road, Box Hill, Victoria, 3128",
+  "address": "999 Whitehorse Road",
+  "state": "Victoria",
+  "suburb": "Box Hill",
+  "postcode": "3128",
+  "latitude": -37.8179646,
+  "longitude": 145.1256642
+}
+```
+
+#### GET `/routes/overview`
+Query params:
+- `fromLat` (required)
+- `fromLng` (required)
+- `toLat` (required)
+- `toLng` (required)
+
+Response `200`:
+```json
+{
+  "distanceMeters": 20233.2,
+  "durationSeconds": 1332.8,
+  "path": [
+    { "latitude": -37.818152, "longitude": 145.12563 },
+    { "latitude": -37.813638, "longitude": 144.96297 }
+  ]
+}
+```
+
 ## 5. Generic Error Response
 Example:
 ```json

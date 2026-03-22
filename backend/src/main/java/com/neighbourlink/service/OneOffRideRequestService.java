@@ -63,7 +63,23 @@ public class OneOffRideRequestService {
         RideRequest rideRequest = new RideRequest();
         rideRequest.setRider(rider);
         rideRequest.setOrigin(request.getOrigin().trim());
+        rideRequest.setOriginAddress(normalizeOptional(request.getOriginAddress()) != null
+                ? normalizeOptional(request.getOriginAddress())
+                : request.getOrigin().trim());
+        rideRequest.setOriginState(normalizeOptional(request.getOriginState()));
+        rideRequest.setOriginSuburb(normalizeOptional(request.getOriginSuburb()));
+        rideRequest.setOriginPostcode(normalizeOptional(request.getOriginPostcode()));
+        rideRequest.setOriginLatitude(request.getOriginLatitude());
+        rideRequest.setOriginLongitude(request.getOriginLongitude());
         rideRequest.setDestination(request.getDestination().trim());
+        rideRequest.setDestinationAddress(normalizeOptional(request.getDestinationAddress()) != null
+                ? normalizeOptional(request.getDestinationAddress())
+                : request.getDestination().trim());
+        rideRequest.setDestinationState(normalizeOptional(request.getDestinationState()));
+        rideRequest.setDestinationSuburb(normalizeOptional(request.getDestinationSuburb()));
+        rideRequest.setDestinationPostcode(normalizeOptional(request.getDestinationPostcode()));
+        rideRequest.setDestinationLatitude(request.getDestinationLatitude());
+        rideRequest.setDestinationLongitude(request.getDestinationLongitude());
         rideRequest.setTripDate(LocalDate.parse(request.getTripDate()));
         rideRequest.setTripTime(request.getTripTime().trim());
         rideRequest.setPassengerCount(request.getPassengerCount());
@@ -81,7 +97,19 @@ public class OneOffRideRequestService {
                         rideRequest.getRider().getId(),
                         rideRequest.getRider().getFullName(),
                         rideRequest.getOrigin(),
+                        rideRequest.getOriginAddress(),
+                        rideRequest.getOriginState(),
+                        rideRequest.getOriginSuburb(),
+                        rideRequest.getOriginPostcode(),
+                        rideRequest.getOriginLatitude(),
+                        rideRequest.getOriginLongitude(),
                         rideRequest.getDestination(),
+                        rideRequest.getDestinationAddress(),
+                        rideRequest.getDestinationState(),
+                        rideRequest.getDestinationSuburb(),
+                        rideRequest.getDestinationPostcode(),
+                        rideRequest.getDestinationLatitude(),
+                        rideRequest.getDestinationLongitude(),
                         rideRequest.getTripDate().toString(),
                         rideRequest.getTripTime(),
                         rideRequest.getPassengerCount(),
@@ -132,7 +160,19 @@ public class OneOffRideRequestService {
                         offer.getRideRequest().getRider().getId(),
                         offer.getRideRequest().getRider().getFullName(),
                         offer.getRideRequest().getOrigin(),
+                        offer.getRideRequest().getOriginAddress(),
+                        offer.getRideRequest().getOriginState(),
+                        offer.getRideRequest().getOriginSuburb(),
+                        offer.getRideRequest().getOriginPostcode(),
+                        offer.getRideRequest().getOriginLatitude(),
+                        offer.getRideRequest().getOriginLongitude(),
                         offer.getRideRequest().getDestination(),
+                        offer.getRideRequest().getDestinationAddress(),
+                        offer.getRideRequest().getDestinationState(),
+                        offer.getRideRequest().getDestinationSuburb(),
+                        offer.getRideRequest().getDestinationPostcode(),
+                        offer.getRideRequest().getDestinationLatitude(),
+                        offer.getRideRequest().getDestinationLongitude(),
                         offer.getRideRequest().getTripDate().toString(),
                         offer.getRideRequest().getTripTime(),
                         offer.getRideRequest().getPassengerCount(),
@@ -156,7 +196,19 @@ public class OneOffRideRequestService {
                 .map(request -> new RiderRideRequestHistoryItemDto(
                         request.getId(),
                         request.getOrigin(),
+                        request.getOriginAddress(),
+                        request.getOriginState(),
+                        request.getOriginSuburb(),
+                        request.getOriginPostcode(),
+                        request.getOriginLatitude(),
+                        request.getOriginLongitude(),
                         request.getDestination(),
+                        request.getDestinationAddress(),
+                        request.getDestinationState(),
+                        request.getDestinationSuburb(),
+                        request.getDestinationPostcode(),
+                        request.getDestinationLatitude(),
+                        request.getDestinationLongitude(),
                         request.getTripDate() == null ? null : request.getTripDate().toString(),
                         request.getTripTime(),
                         request.getPassengerCount(),
@@ -335,6 +387,16 @@ public class OneOffRideRequestService {
         if (request.getPassengerCount() == null || request.getPassengerCount() < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "passengerCount must be >= 1");
         }
+        validateCoordinatePair(
+                request.getOriginLatitude(),
+                request.getOriginLongitude(),
+                "originLatitude and originLongitude must both be provided together"
+        );
+        validateCoordinatePair(
+                request.getDestinationLatitude(),
+                request.getDestinationLongitude(),
+                "destinationLatitude and destinationLongitude must both be provided together"
+        );
         try {
             LocalDate.parse(request.getTripDate().trim());
         } catch (Exception ex) {
@@ -381,5 +443,17 @@ public class OneOffRideRequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
         }
         return normalized;
+    }
+
+    private void validateCoordinatePair(Double latitude, Double longitude, String message) {
+        if ((latitude == null && longitude != null) || (latitude != null && longitude == null)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+        }
+        if (latitude != null && (latitude < -90 || latitude > 90)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "latitude must be between -90 and 90");
+        }
+        if (longitude != null && (longitude < -180 || longitude > 180)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "longitude must be between -180 and 180");
+        }
     }
 }

@@ -1,4 +1,5 @@
 DELETE FROM ratings;
+DELETE FROM au_location_reference;
 DELETE FROM ride_matches;
 DELETE FROM ride_request_offers;
 DELETE FROM join_requests;
@@ -42,14 +43,28 @@ INSERT INTO ratings (id, profile_id, score, comment, created_date) VALUES
   (3, 2, 5, 'Great communication', '2026-03-11 08:10:00'),
   (4, 2, 4, 'Smooth trip and punctual', '2026-03-13 19:20:00');
 
-INSERT INTO ride_offers (id, driver_id, origin, destination, departure_date, departure_time, available_seats, status) VALUES
-  (101, 1, 'Clayton', 'City Centre', '2026-03-18 00:00:00.000', '08:30', 2, 'OPEN'),
-  (102, 1, 'Clayton', 'City Centre', '2026-03-18 00:00:00.000', '09:00', 1, 'OPEN'),
-  (103, 2, 'Box Hill', 'Community Hall', '2026-03-20 00:00:00.000', '10:00', 2, 'OPEN'),
-  (104, 2, 'Clayton', 'City Centre', '2026-03-18 00:00:00.000', '08:30', 0, 'CLOSED');
+INSERT INTO au_location_reference (id, state, suburb, postcode, address, latitude, longitude) VALUES
+  (1, 'VIC', 'Clayton', '3168', 'Clayton Railway Station, VIC', -37.924100, 145.120700),
+  (2, 'VIC', 'Melbourne', '3000', 'Melbourne CBD, VIC', -37.813600, 144.963100),
+  (3, 'VIC', 'Box Hill', '3128', 'Box Hill Library, VIC', -37.818300, 145.125600),
+  (4, 'VIC', 'Box Hill', '3128', 'Box Hill Community Hall, VIC', -37.817900, 145.124900);
 
-INSERT INTO ride_requests (id, rider_id, origin, destination, trip_date, trip_time, passenger_count, notes, status) VALUES
-  (201, 4, 'Box Hill', 'Community Hall', '2026-03-20 00:00:00.000', '10:00', 2, 'Weekend event travel', 'OPEN');
+INSERT INTO ride_offers (
+  id, driver_id, origin, origin_address, origin_state, origin_suburb, origin_postcode, origin_latitude, origin_longitude,
+  destination, destination_address, destination_state, destination_suburb, destination_postcode, destination_latitude, destination_longitude,
+  departure_date, departure_time, available_seats, status
+) VALUES
+  (101, 1, 'Clayton', 'Clayton Railway Station', 'VIC', 'Clayton', '3168', -37.924100, 145.120700, 'City Centre', 'Melbourne CBD', 'VIC', 'Melbourne', '3000', -37.813600, 144.963100, '2026-03-18 00:00:00.000', '08:30', 2, 'OPEN'),
+  (102, 1, 'Clayton', 'Clayton Railway Station', 'VIC', 'Clayton', '3168', -37.924100, 145.120700, 'City Centre', 'Melbourne CBD', 'VIC', 'Melbourne', '3000', -37.813600, 144.963100, '2026-03-18 00:00:00.000', '09:00', 1, 'OPEN'),
+  (103, 2, 'Box Hill', 'Box Hill Library', 'VIC', 'Box Hill', '3128', -37.818300, 145.125600, 'Community Hall', 'Box Hill Community Hall', 'VIC', 'Box Hill', '3128', -37.817900, 145.124900, '2026-03-20 00:00:00.000', '10:00', 2, 'OPEN'),
+  (104, 2, 'Clayton', 'Clayton Railway Station', 'VIC', 'Clayton', '3168', -37.924100, 145.120700, 'City Centre', 'Melbourne CBD', 'VIC', 'Melbourne', '3000', -37.813600, 144.963100, '2026-03-18 00:00:00.000', '08:30', 0, 'CLOSED');
+
+INSERT INTO ride_requests (
+  id, rider_id, origin, origin_address, origin_state, origin_suburb, origin_postcode, origin_latitude, origin_longitude,
+  destination, destination_address, destination_state, destination_suburb, destination_postcode, destination_latitude, destination_longitude,
+  trip_date, trip_time, passenger_count, notes, status
+) VALUES
+  (201, 4, 'Box Hill', 'Box Hill Library', 'VIC', 'Box Hill', '3128', -37.818300, 145.125600, 'Community Hall', 'Box Hill Community Hall', 'VIC', 'Box Hill', '3128', -37.817900, 145.124900, '2026-03-20 00:00:00.000', '10:00', 2, 'Weekend event travel', 'OPEN');
 
 INSERT INTO ride_matches (id, driver_id, rider_id, ride_offer_id, ride_request_id, confirmed_date_time, meeting_point, trip_status) VALUES
   (401, 1, 3, 101, NULL, '2026-03-16 08:30:00', 'Clayton Station Gate 2', 'CONFIRMED');

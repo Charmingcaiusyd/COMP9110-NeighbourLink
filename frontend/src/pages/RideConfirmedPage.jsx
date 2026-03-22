@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import SectionCard from '../components/SectionCard.jsx';
+import TripRouteMap from '../components/TripRouteMap.jsx';
 
 function RideConfirmedPage() {
   const { userId, session } = useAuth();
@@ -58,6 +59,18 @@ function RideConfirmedPage() {
             <p><strong>Passengers:</strong> {oneOffInput.passengerCount}</p>
             <p><strong>Request ID:</strong> {oneOffRideRequest.rideRequestId}</p>
             <p><strong>Request status:</strong> {oneOffRideRequest.status}</p>
+            <TripRouteMap
+              trip={{
+                origin: oneOffInput.origin,
+                destination: oneOffInput.destination,
+                originAddress: oneOffInput.originAddress,
+                destinationAddress: oneOffInput.destinationAddress,
+                originLatitude: oneOffInput.originLatitude,
+                originLongitude: oneOffInput.originLongitude,
+                destinationLatitude: oneOffInput.destinationLatitude,
+                destinationLongitude: oneOffInput.destinationLongitude,
+              }}
+            />
           </>
         ) : hasSubmittedRequest ? (
           <>
@@ -68,6 +81,18 @@ function RideConfirmedPage() {
             <p><strong>Requested seats:</strong> {seatsRequested}</p>
             <p><strong>Request ID:</strong> {joinRequest.joinRequestId}</p>
             <p><strong>Request status:</strong> {joinRequest.status}</p>
+            <TripRouteMap
+              trip={{
+                origin: offerDetail.origin,
+                destination: offerDetail.destination,
+                originAddress: offerDetail.originAddress,
+                destinationAddress: offerDetail.destinationAddress,
+                originLatitude: offerDetail.originLatitude,
+                originLongitude: offerDetail.originLongitude,
+                destinationLatitude: offerDetail.destinationLatitude,
+                destinationLongitude: offerDetail.destinationLongitude,
+              }}
+            />
           </>
         ) : (
           <>

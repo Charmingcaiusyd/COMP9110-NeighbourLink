@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getRideOfferDetail, submitJoinRequest } from '../api/rideOffersApi.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import SectionCard from '../components/SectionCard.jsx';
+import TripRouteMap from '../components/TripRouteMap.jsx';
 
 function RideOfferDetailsPage() {
   const { userId, role } = useAuth();
@@ -125,11 +126,25 @@ function RideOfferDetailsPage() {
 
         <SectionCard title="Trip Information">
           <p><strong>Origin:</strong> {detail.origin}</p>
+          {detail.originAddress ? <p><strong>Origin address:</strong> {detail.originAddress}</p> : null}
           <p><strong>Destination:</strong> {detail.destination}</p>
+          {detail.destinationAddress ? <p><strong>Destination address:</strong> {detail.destinationAddress}</p> : null}
           <p><strong>Date:</strong> {detail.departureDate}</p>
           <p><strong>Departure:</strong> {detail.departureTime}</p>
           <p><strong>Available seats:</strong> {detail.availableSeats}</p>
           <p><strong>Status:</strong> {detail.status}</p>
+          <TripRouteMap
+            trip={{
+              origin: detail.origin,
+              destination: detail.destination,
+              originAddress: detail.originAddress,
+              destinationAddress: detail.destinationAddress,
+              originLatitude: detail.originLatitude,
+              originLongitude: detail.originLongitude,
+              destinationLatitude: detail.destinationLatitude,
+              destinationLongitude: detail.destinationLongitude,
+            }}
+          />
         </SectionCard>
       </div>
       ) : null}

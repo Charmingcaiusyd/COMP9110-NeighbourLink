@@ -9,6 +9,7 @@ import {
 } from '../api/rideOffersApi.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import SectionCard from '../components/SectionCard.jsx';
+import TripRouteMap from '../components/TripRouteMap.jsx';
 
 function isUpcomingTrip(trip, now = new Date()) {
   if (!trip || trip.tripStatus !== 'CONFIRMED' || !trip.tripDate) {
@@ -161,10 +162,11 @@ function MyTripsPage() {
               <p><strong>Type:</strong> {trip.tripType}</p>
               <p><strong>Driver:</strong> {trip.driverName}</p>
               <p><strong>Rider:</strong> {trip.riderName}</p>
-              <p><strong>Route:</strong> {trip.origin} to {trip.destination}</p>
+              <p><strong>Route:</strong> {(trip.originAddress || trip.origin)} to {(trip.destinationAddress || trip.destination)}</p>
               <p><strong>Date and time:</strong> {trip.tripDate} {trip.tripTime}</p>
               <p><strong>Meeting point:</strong> {trip.meetingPoint || 'Not provided'}</p>
               <p><strong>Status:</strong> {trip.tripStatus}</p>
+              <TripRouteMap trip={trip} />
             </article>
           ))}
         </section>

@@ -11,6 +11,12 @@ public class TripItemDto {
     private String riderName;
     private String origin;
     private String destination;
+    private String originAddress;
+    private String destinationAddress;
+    private Double originLatitude;
+    private Double originLongitude;
+    private Double destinationLatitude;
+    private Double destinationLongitude;
     private String tripDate;
     private String tripTime;
     private String meetingPoint;
@@ -26,6 +32,12 @@ public class TripItemDto {
             String riderName,
             String origin,
             String destination,
+            String originAddress,
+            String destinationAddress,
+            Double originLatitude,
+            Double originLongitude,
+            Double destinationLatitude,
+            Double destinationLongitude,
             String tripDate,
             String tripTime,
             String meetingPoint,
@@ -40,6 +52,12 @@ public class TripItemDto {
         this.riderName = riderName;
         this.origin = origin;
         this.destination = destination;
+        this.originAddress = originAddress;
+        this.destinationAddress = destinationAddress;
+        this.originLatitude = originLatitude;
+        this.originLongitude = originLongitude;
+        this.destinationLatitude = destinationLatitude;
+        this.destinationLongitude = destinationLongitude;
         this.tripDate = tripDate;
         this.tripTime = tripTime;
         this.meetingPoint = meetingPoint;
@@ -77,6 +95,30 @@ public class TripItemDto {
 
     public String getDestination() {
         return destination;
+    }
+
+    public String getOriginAddress() {
+        return originAddress;
+    }
+
+    public String getDestinationAddress() {
+        return destinationAddress;
+    }
+
+    public Double getOriginLatitude() {
+        return originLatitude;
+    }
+
+    public Double getOriginLongitude() {
+        return originLongitude;
+    }
+
+    public Double getDestinationLatitude() {
+        return destinationLatitude;
+    }
+
+    public Double getDestinationLongitude() {
+        return destinationLongitude;
     }
 
     public String getTripDate() {

@@ -58,6 +58,12 @@ public class TripQueryService {
         String tripType;
         String origin;
         String destination;
+        String originAddress;
+        String destinationAddress;
+        Double originLatitude;
+        Double originLongitude;
+        Double destinationLatitude;
+        Double destinationLongitude;
         String tripDate;
         String tripTime;
 
@@ -67,18 +73,36 @@ public class TripQueryService {
             tripType = "JOIN_REQUEST";
             origin = rideOffer.getOrigin();
             destination = rideOffer.getDestination();
+            originAddress = rideOffer.getOriginAddress();
+            destinationAddress = rideOffer.getDestinationAddress();
+            originLatitude = rideOffer.getOriginLatitude();
+            originLongitude = rideOffer.getOriginLongitude();
+            destinationLatitude = rideOffer.getDestinationLatitude();
+            destinationLongitude = rideOffer.getDestinationLongitude();
             tripDate = rideOffer.getDepartureDate() == null ? null : rideOffer.getDepartureDate().toString();
             tripTime = rideOffer.getDepartureTime();
         } else if (rideRequest != null) {
             tripType = "ONE_OFF_REQUEST";
             origin = rideRequest.getOrigin();
             destination = rideRequest.getDestination();
+            originAddress = rideRequest.getOriginAddress();
+            destinationAddress = rideRequest.getDestinationAddress();
+            originLatitude = rideRequest.getOriginLatitude();
+            originLongitude = rideRequest.getOriginLongitude();
+            destinationLatitude = rideRequest.getDestinationLatitude();
+            destinationLongitude = rideRequest.getDestinationLongitude();
             tripDate = rideRequest.getTripDate() == null ? null : rideRequest.getTripDate().toString();
             tripTime = rideRequest.getTripTime();
         } else {
             tripType = "UNKNOWN";
             origin = null;
             destination = null;
+            originAddress = null;
+            destinationAddress = null;
+            originLatitude = null;
+            originLongitude = null;
+            destinationLatitude = null;
+            destinationLongitude = null;
             tripDate = null;
             tripTime = null;
         }
@@ -92,6 +116,12 @@ public class TripQueryService {
                 rideMatch.getRider().getFullName(),
                 origin,
                 destination,
+                originAddress,
+                destinationAddress,
+                originLatitude,
+                originLongitude,
+                destinationLatitude,
+                destinationLongitude,
                 tripDate,
                 tripTime,
                 rideMatch.getMeetingPoint(),

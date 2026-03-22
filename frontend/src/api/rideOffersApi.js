@@ -272,3 +272,42 @@ export async function getDriverTrips(driverId) {
   }
   return response.json();
 }
+
+export async function searchAustralianLocations(query, limit = 8) {
+  const params = new URLSearchParams();
+  if (query && query.trim() !== '') {
+    params.set('q', query.trim());
+  }
+  params.set('limit', String(limit));
+  const response = await fetch(`${API_BASE_URL}/locations/au/search?${params.toString()}`);
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function reverseLookupAustralia(latitude, longitude) {
+  const params = new URLSearchParams({
+    lat: String(latitude),
+    lng: String(longitude),
+  });
+  const response = await fetch(`${API_BASE_URL}/locations/au/reverse?${params.toString()}`);
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function getRouteOverview(fromLat, fromLng, toLat, toLng) {
+  const params = new URLSearchParams({
+    fromLat: String(fromLat),
+    fromLng: String(fromLng),
+    toLat: String(toLat),
+    toLng: String(toLng),
+  });
+  const response = await fetch(`${API_BASE_URL}/routes/overview?${params.toString()}`);
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}

@@ -112,6 +112,24 @@ Current datasource configuration:
 - JPA schema mode: `ddl-auto: update`
 - SQL init mode: `always`
 
+### Location Dataset Storage (Australia)
+Location metadata for map-assisted input is stored in:
+- `au_location_reference`
+
+Table purpose:
+- store Australian `state`, `suburb`, `postcode`, and detailed `address`
+- optional `latitude` / `longitude` for map pin defaults
+- supports your later manual batch import
+
+Open data/services integrated:
+- OpenStreetMap Nominatim (search + reverse geocoding, Australia-filtered)
+- OSRM public routing (trip direction overview)
+
+New backend endpoints:
+- `GET /api/locations/au/search?q=...&limit=...`
+- `GET /api/locations/au/reverse?lat=...&lng=...`
+- `GET /api/routes/overview?fromLat=...&fromLng=...&toLat=...&toLng=...`
+
 Important notes:
 - The SQLite DB file is stored in `backend/data/neighbourlink.db`.
 - The schema is created/updated automatically by JPA on startup.
