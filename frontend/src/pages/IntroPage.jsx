@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import communityPlaceholder from '../assets/placeholders/community-placeholder.svg';
@@ -78,6 +78,8 @@ function IntroPage() {
   const { isAuthenticated } = useAuth();
   const [activeStory, setActiveStory] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navActionsRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -86,31 +88,79 @@ function IntroPage() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      return undefined;
+    }
+
+    function handleOutsideClick(event) {
+      if (!navActionsRef.current?.contains(event.target)) {
+        setMobileMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setMobileMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick, { passive: true });
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <div className="intro-shell">
       <header className="intro-nav">
         <div className="intro-nav-inner">
-          <Link className="brand" to={isAuthenticated ? '/' : '/intro'}>
+          <Link
+            className="brand"
+            to={isAuthenticated ? '/' : '/intro'}
+            onClick={() => setMobileMenuOpen(false)}
+          >
             <span className="brand-mark">NL</span>
             <span className="brand-text">
               <strong>NeighbourLink</strong>
-              Community Ride Matching
+              <span className="brand-subtitle">Community Ride Matching</span>
             </span>
           </Link>
-          <nav className="intro-nav-links">
-            <a href="#overview">Overview</a>
-            <a href="#use-cases">Use Cases</a>
-            <a href="#stories">Live Demo Flow</a>
-            <a href="#faq">FAQ</a>
-            {isAuthenticated ? (
-              <Link className="btn" to="/">Open App</Link>
-            ) : (
-              <>
-                <Link className="btn btn-secondary" to="/login">Log In</Link>
-                <Link className="btn" to="/register">Get Started</Link>
-              </>
-            )}
-          </nav>
+          <div className="intro-nav-actions" ref={navActionsRef}>
+            <button
+              className="intro-nav-toggle"
+              type="button"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="intro-nav-links"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+            >
+              {mobileMenuOpen ? 'Close Menu' : 'Menu'}
+            </button>
+            <nav
+              id="intro-nav-links"
+              className={`intro-nav-links ${mobileMenuOpen ? 'is-open' : ''}`}
+              aria-label="Intro sections"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <a className="intro-link" href="#overview">Overview</a>
+              <a className="intro-link" href="#use-cases">Use Cases</a>
+              <a className="intro-link" href="#stories">Live Demo Flow</a>
+              <a className="intro-link" href="#faq">FAQ</a>
+              {isAuthenticated ? (
+                <Link className="btn" to="/">Open App</Link>
+              ) : (
+                <>
+                  <Link className="btn btn-secondary" to="/login">Log In</Link>
+                  <Link className="btn" to="/register">Get Started</Link>
+                </>
+              )}
+            </nav>
+          </div>
         </div>
       </header>
 

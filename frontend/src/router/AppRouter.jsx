@@ -1,9 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from '../components/AppLayout.jsx';
 import RequireAuth from '../auth/RequireAuth.jsx';
+import RequireAdmin from '../auth/RequireAdmin.jsx';
 import { useAuth } from '../auth/AuthContext.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
+import AdminLoginPage from '../pages/AdminLoginPage.jsx';
+import AdminDashboardPage from '../pages/AdminDashboardPage.jsx';
 import MyTripsPage from '../pages/MyTripsPage.jsx';
 import ProfilePage from '../pages/ProfilePage.jsx';
 import FindRidePage from '../pages/FindRidePage.jsx';
@@ -16,18 +19,27 @@ import RideRequestOffersPage from '../pages/RideRequestOffersPage.jsx';
 import IntroPage from '../pages/IntroPage.jsx';
 
 function AppRouter() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
+  const defaultHome = role === 'ADMIN' ? '/admin' : '/';
 
   return (
     <Routes>
       <Route path="/intro" element={<IntroPage />} />
       <Route
         path="/login"
-        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
+        element={isAuthenticated ? <Navigate to={defaultHome} replace /> : <LoginPage />}
       />
       <Route
         path="/register"
-        element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />}
+        element={isAuthenticated ? <Navigate to={defaultHome} replace /> : <RegisterPage />}
+      />
+      <Route
+        path="/admin/login"
+        element={isAuthenticated ? <Navigate to={defaultHome} replace /> : <AdminLoginPage />}
+      />
+      <Route
+        path="/admin"
+        element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>}
       />
       <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
         <Route path="/" element={<FindRidePage />} />
@@ -40,7 +52,7 @@ function AppRouter() {
         <Route path="/my-trips" element={<MyTripsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
-      <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/intro'} replace />} />
+      <Route path="*" element={<Navigate to={isAuthenticated ? defaultHome : '/intro'} replace />} />
     </Routes>
   );
 }

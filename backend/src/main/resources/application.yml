@@ -16,3 +16,10 @@ server:
   port: 8080
   error:
     include-message: always
+
+neighbourlink:
+  admin:
+    email: admin@neighbourlink.local
+    password: admin12345
+    full-name: NeighbourLink Admin
+    session-key: NEIGHBOURLINK-ADMIN-SESSION-2026

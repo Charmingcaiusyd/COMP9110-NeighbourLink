@@ -28,4 +28,12 @@ public interface RideMatchRepository extends JpaRepository<RideMatch, Long> {
             + "where d.id = :driverId "
             + "order by rm.confirmedDateTime desc")
     List<RideMatch> findByDriverIdWithDetails(@Param("driverId") Long driverId);
+
+    @Query("select rm from RideMatch rm "
+            + "join fetch rm.driver d "
+            + "join fetch rm.rider r "
+            + "left join fetch rm.rideOffer ro "
+            + "left join fetch rm.rideRequest rr "
+            + "order by rm.confirmedDateTime desc, rm.id desc")
+    List<RideMatch> findAllWithDetails();
 }

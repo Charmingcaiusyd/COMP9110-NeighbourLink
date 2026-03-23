@@ -144,6 +144,8 @@ Reset local database quickly:
 ## Current Frontend Routes
 - `/login` -> Login
 - `/register` -> Register
+- `/admin/login` -> Fixed admin login
+- `/admin` -> Admin control panel
 - `/` -> Find a Ride
 - `/search-results` -> Search Results
 - `/ride-offer-details/:offerId` -> Ride Offer Details
@@ -157,10 +159,12 @@ Reset local database quickly:
 ## Demo Accounts
 - Rider: `maria.rider@example.com` / `demo1234`
 - Driver: `emma.driver@example.com` / `demo1234`
+- Admin (fixed only): `admin@neighbourlink.local` / `admin12345`
 
 Notes:
 - Passwords are stored with bcrypt for new registrations.
 - Existing demo plaintext credentials are auto-upgraded to bcrypt on successful login.
+- Admin account is fixed by backend config (`application.yml`) and cannot be created via register API.
 
 ## Backend Tests
 Run minimal UC2/UC3 integration tests:

@@ -19,4 +19,11 @@ public interface RideRequestRepository extends JpaRepository<RideRequest, Long> 
 
     @Query("select rr from RideRequest rr where rr.rider.id = :riderId order by rr.tripDate desc, rr.id desc")
     List<RideRequest> findByRiderId(@Param("riderId") Long riderId);
+
+    @Query("select rr from RideRequest rr "
+            + "join fetch rr.rider r "
+            + "order by rr.tripDate desc, rr.id desc")
+    List<RideRequest> findAllWithRiderOrderByRecent();
+
+    long countByStatus(RideRequestStatus status);
 }

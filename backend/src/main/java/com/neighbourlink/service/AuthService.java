@@ -20,12 +20,14 @@ import java.util.Locale;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthService {
+    private static final Long ADMIN_USER_ID = -1L;
 
     private final UserRepository userRepository;
     private final RiderRepository riderRepository;
@@ -33,6 +35,10 @@ public class AuthService {
     private final ProfileRepository profileRepository;
     private final CredentialRepository credentialRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String adminEmail;
+    private final String adminPassword;
+    private final String adminFullName;
+    private final String adminSessionKey;
 
     public AuthService(
             UserRepository userRepository,
@@ -40,7 +46,11 @@ public class AuthService {
             DriverRepository driverRepository,
             ProfileRepository profileRepository,
             CredentialRepository credentialRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            @Value("${neighbourlink.admin.email:admin@neighbourlink.local}") String adminEmail,
+            @Value("${neighbourlink.admin.password:admin12345}") String adminPassword,
+            @Value("${neighbourlink.admin.full-name:NeighbourLink Admin}") String adminFullName,
+            @Value("${neighbourlink.admin.session-key:NL-ADMIN-SESSION-KEY}") String adminSessionKey
     ) {
         this.userRepository = userRepository;
         this.riderRepository = riderRepository;
@@ -48,14 +58,22 @@ public class AuthService {
         this.profileRepository = profileRepository;
         this.credentialRepository = credentialRepository;
         this.passwordEncoder = passwordEncoder;
+        this.adminEmail = normalizeRequired(adminEmail, "Admin email must not be blank").toLowerCase(Locale.ROOT);
+        this.adminPassword = normalizeRequired(adminPassword, "Admin password must not be blank");
+        this.adminFullName = normalizeRequired(adminFullName, "Admin full name must not be blank");
+        this.adminSessionKey = normalizeRequired(adminSessionKey, "Admin session key must not be blank");
     }
 
     public AuthResponseDto login(AuthLoginRequestDto request) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
-        String email = normalizeRequired(request.getEmail(), "email is required");
+        String email = normalizeRequired(request.getEmail(), "email is required").toLowerCase(Locale.ROOT);
         String password = normalizeRequired(request.getPassword(), "password is required");
+
+        if (isAdminCredentials(email, password)) {
+            return buildAdminAuthResponse();
+        }
 
         Credential credential = credentialRepository.findByUserEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
@@ -180,6 +198,20 @@ public class AuthService {
     private AuthResponseDto buildAuthResponse(User user) {
         String role = resolveRole(user.getId());
         return new AuthResponseDto(user.getId(), user.getFullName(), user.getEmail(), role);
+    }
+
+    private boolean isAdminCredentials(String email, String password) {
+        return adminEmail.equalsIgnoreCase(email) && adminPassword.equals(password);
+    }
+
+    private AuthResponseDto buildAdminAuthResponse() {
+        return new AuthResponseDto(
+                ADMIN_USER_ID,
+                adminFullName,
+                adminEmail,
+                "ADMIN",
+                adminSessionKey
+        );
     }
 
     private String resolveRole(Long userId) {

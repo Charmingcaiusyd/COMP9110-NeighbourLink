@@ -31,4 +31,11 @@ public interface RideOfferRepository extends JpaRepository<RideOffer, Long> {
             + "left join fetch d.profile p "
             + "where ro.id = :id")
     Optional<RideOffer> findDetailById(@Param("id") Long id);
+
+    @Query("select ro from RideOffer ro "
+            + "join fetch ro.driver d "
+            + "order by ro.departureDate desc, ro.id desc")
+    List<RideOffer> findAllWithDriverOrderByRecent();
+
+    long countByStatus(RideOfferStatus status);
 }

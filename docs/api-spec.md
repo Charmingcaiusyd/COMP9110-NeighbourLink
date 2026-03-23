@@ -42,6 +42,14 @@ Format: JSON
   - `PATCH /profiles/{userId}`
   - `GET /riders/{riderId}/trips`
   - `GET /drivers/{driverId}/trips`
+- Internal Admin Console (fixed account, no registration):
+  - `GET /admin/overview`
+  - `GET /admin/users`
+  - `PATCH /admin/users/{userId}`
+  - `GET /admin/ride-offers`
+  - `GET /admin/ride-requests`
+  - `GET /admin/join-requests`
+  - `GET /admin/ride-matches`
 
 ## 4. Endpoints
 
@@ -375,9 +383,26 @@ Response `200`:
   "userId": 4,
   "fullName": "Maria Gomez",
   "email": "maria.rider@example.com",
-  "role": "RIDER"
+  "role": "RIDER",
+  "adminSessionKey": null
 }
 ```
+
+Admin fixed-account login uses the same endpoint and returns:
+```json
+{
+  "userId": -1,
+  "fullName": "NeighbourLink Admin",
+  "email": "admin@neighbourlink.local",
+  "role": "ADMIN",
+  "adminSessionKey": "NEIGHBOURLINK-ADMIN-SESSION-2026"
+}
+```
+
+Notes:
+- Admin account is fixed in backend config.
+- Registration endpoint does not support creating admin users.
+- Admin APIs require header `X-Admin-Session`.
 
 #### POST `/auth/register`
 Request body:
@@ -460,6 +485,68 @@ Response `200`:
   }
 ]
 ```
+
+### 4.6 Internal Admin APIs (Fixed Account)
+All endpoints below require request header:
+- `X-Admin-Session: <adminSessionKey>`
+
+#### GET `/admin/overview`
+Response `200`:
+```json
+{
+  "totalUsers": 6,
+  "totalRiders": 3,
+  "totalDrivers": 3,
+  "activeUsers": 6,
+  "suspendedUsers": 0,
+  "totalRideOffers": 4,
+  "openRideOffers": 3,
+  "totalRideRequests": 3,
+  "openRideRequests": 2,
+  "totalJoinRequests": 2,
+  "pendingJoinRequests": 1,
+  "totalRideMatches": 2,
+  "totalRatings": 3
+}
+```
+
+#### GET `/admin/users`
+Purpose: list all rider/driver profiles and account metadata for admin control panel.
+
+#### PATCH `/admin/users/{userId}`
+Purpose: update account/profile fields for any user role.
+
+Request body example:
+```json
+{
+  "fullName": "Emma Lee",
+  "phone": "0400000001",
+  "suburb": "Clayton",
+  "accountStatus": "ACTIVE",
+  "bio": "Daily commuter",
+  "travelPreferences": "No smoking",
+  "trustNotes": "Verified licence",
+  "driverLicenceVerifiedStatus": "VERIFIED",
+  "driverVehicleInfo": "Toyota Corolla",
+  "driverSpareSeatCapacity": 3
+}
+```
+
+Validation:
+- `accountStatus`: `ACTIVE | INACTIVE | SUSPENDED`
+- `driverLicenceVerifiedStatus`: `PENDING | VERIFIED | REJECTED` (driver only)
+
+#### GET `/admin/ride-offers`
+Purpose: list all ride offers across all drivers.
+
+#### GET `/admin/ride-requests`
+Purpose: list all one-off ride requests across all riders.
+
+#### GET `/admin/join-requests`
+Purpose: list all join requests with rider + offer references.
+
+#### GET `/admin/ride-matches`
+Purpose: list all confirmed matches from both join-request and one-off flows.
 
 ### 4.5 Location and Map APIs (V2)
 These endpoints support Australia address lookup, map pin reverse lookup, and route overview.

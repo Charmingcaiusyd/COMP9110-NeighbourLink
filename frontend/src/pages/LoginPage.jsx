@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext.jsx';
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, loginWithPassword, loginWithSocial } = useAuth();
+  const { isAuthenticated, role, loginWithPassword, loginWithSocial } = useAuth();
   const [email, setEmail] = useState('maria.rider@example.com');
   const [password, setPassword] = useState('demo1234');
   const [submitting, setSubmitting] = useState(false);
@@ -13,16 +13,20 @@ function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/', { replace: true });
+      navigate(role === 'ADMIN' ? '/admin' : '/', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, role]);
 
   async function handleLogin(event) {
     event.preventDefault();
     setError('');
     setSubmitting(true);
     try {
-      await loginWithPassword(email.trim(), password);
+      const authResponse = await loginWithPassword(email.trim(), password);
+      if (authResponse?.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+        return;
+      }
       navigate(location.state?.from || '/', { replace: true });
     } catch (loginError) {
       setError(loginError.message || 'Unable to sign in right now.');
@@ -55,6 +59,9 @@ function LoginPage() {
           <Link className="btn btn-secondary" to="/intro">View Intro</Link>
         </div>
         <p className="auth-hint">Demo login: `maria.rider@example.com` / `demo1234`</p>
+        <p className="auth-hint">
+          Admin login: <Link to="/admin/login">Open fixed-account admin portal</Link>
+        </p>
         <form className="form-grid" onSubmit={handleLogin}>
           <label>
             Email
