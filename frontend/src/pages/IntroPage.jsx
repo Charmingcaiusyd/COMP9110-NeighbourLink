@@ -1,90 +1,190 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
-import communityPlaceholder from '../assets/placeholders/community-placeholder.svg';
-import routePlaceholder from '../assets/placeholders/route-placeholder.svg';
-import safetyPlaceholder from '../assets/placeholders/safety-placeholder.svg';
 
-const featureCards = [
+const showcaseImages = {
+  city: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=1800&q=80',
+  carpool: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1600&q=80',
+  route: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=1600&q=80',
+  team: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80',
+  admin: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1600&q=80',
+  trust: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1600&q=80',
+};
+
+const capabilityCards = [
   {
-    title: 'Trusted Match Flow',
-    description: 'Review profile and rating summary before accepting any match.',
-    image: safetyPlaceholder,
+    title: 'Fast Rider Search',
+    detail: 'Search available ride offers with route context, date, and seats in one simple flow.',
   },
   {
-    title: 'Local One-Off Trips',
-    description: 'Post a one-off request and accept one clear final driver offer.',
-    image: routePlaceholder,
+    title: 'Join Request Lifecycle',
+    detail: 'Submit, validate, accept or reject join requests with explicit status transitions.',
   },
   {
-    title: 'Simple Rider Experience',
-    description: 'From searching to confirmation, every page keeps the flow short and clear.',
-    image: communityPlaceholder,
+    title: 'One-Off Request Matching',
+    detail: 'Rider posts one-off trip need, drivers respond, rider accepts one final offer.',
+  },
+  {
+    title: 'Trust Before Acceptance',
+    detail: 'Profile plus rating summary is shown before critical acceptance decisions.',
+  },
+  {
+    title: 'Driver Verification Docs',
+    detail: 'Licence, spare seat proof, and rego files are uploaded and reviewed in admin.',
+  },
+  {
+    title: 'Admin Global Operations',
+    detail: 'Single admin console supports pagination, batch updates, and broad data governance.',
   },
 ];
 
-const stories = [
+const useCases = [
+  {
+    id: 'UC1',
+    title: 'Search Available Ride Offers',
+    summary: 'Rider discovers matching options and inspects trust info before requesting seats.',
+    flow: [
+      'Enter search criteria on Find a Ride.',
+      'Review result cards and select one offer.',
+      'Inspect driver profile and rating summary.',
+      'Submit request only when seats and status allow.',
+    ],
+  },
+  {
+    id: 'UC2',
+    title: 'Request to Join Ride Offer',
+    summary: 'Driver reviews rider request, accepts or rejects, and the system creates a valid match.',
+    flow: [
+      'Driver Hub lists pending join requests.',
+      'Decision requires meeting point on acceptance.',
+      'Seat count updates instantly after acceptance.',
+      'Pending requests can be cleared to avoid stale outcomes.',
+    ],
+  },
+  {
+    id: 'UC3',
+    title: 'Post One-Off Request and Accept Driver Offer',
+    summary: 'Rider posts once, receives multiple offers, then confirms exactly one accepted path.',
+    flow: [
+      'Rider posts one-off request with route details.',
+      'Drivers submit seat-capable offers with meeting points.',
+      'Rider reviews trust and offer history context.',
+      'Accepting one offer creates final RideMatch and closes request.',
+    ],
+  },
+];
+
+const journeyPanels = [
   {
     id: 'rider',
-    label: 'Rider Story',
-    title: 'Maria posts one request and confirms one driver',
+    label: 'Rider Experience',
+    title: 'From need to confirmation in a short, readable flow',
+    description:
+      'Rider pages focus on clarity: search, compare, inspect trust, request, then confirm without extra noise.',
     points: [
-      'Publish one-off request in less than 1 minute.',
-      'Review all incoming offers in one list.',
-      'Accept exactly one pending offer and generate a final match.',
+      'Ride Offer Details surfaces trust notes and ratings before action.',
+      'One-off flow enforces one final accepted offer for clean outcomes.',
+      'My Trips keeps confirmed records visible for post-decision certainty.',
     ],
-    image: routePlaceholder,
+    image: showcaseImages.carpool,
   },
   {
     id: 'driver',
-    label: 'Driver Story',
-    title: 'Driver hub keeps decisions focused',
+    label: 'Driver Experience',
+    title: 'Driver Hub centralizes operational decisions',
+    description:
+      'Drivers process normal join requests and one-off responses from one dashboard with clear state feedback.',
     points: [
-      'Handle join requests and one-off responses in one dashboard.',
-      'Meeting point is clear before final acceptance.',
-      'Offer history helps drivers review what was accepted or rejected.',
+      'Meeting point entry is required when confirming requests.',
+      'Open one-off requests include map context for better pickup decisions.',
+      'Driver offer history prevents duplicate pending responses.',
     ],
-    image: communityPlaceholder,
+    image: showcaseImages.route,
   },
   {
-    id: 'trust',
-    label: 'Trust Story',
-    title: 'Trust checks are visible before confirmation',
+    id: 'admin',
+    label: 'Admin Experience',
+    title: 'Single-role admin with strong data control',
+    description:
+      'A fixed admin login enters a purpose-built control panel for user, ride, trust, and verification operations.',
     points: [
-      'Driver detail page includes rating summary and trust notes.',
-      'Profile update page lets users keep identity and notes current.',
-      'My Trips records confirmed matches for both rider and driver.',
+      'Pagination and batch edits speed up high-volume updates.',
+      'Driver verification files are reviewable with status control.',
+      'Join requests and ride matches are split for clearer governance.',
     ],
-    image: safetyPlaceholder,
+    image: showcaseImages.admin,
+  },
+];
+
+const architecturePanels = [
+  {
+    title: 'Backend Foundations',
+    entries: ['Java 17', 'Spring Boot', 'Spring Web', 'Spring Data JPA', 'Bean Validation', 'SQLite'],
+  },
+  {
+    title: 'Frontend Foundations',
+    entries: ['React + Vite', 'Role-based pages', 'Leaflet map integration', 'Responsive CSS breakpoints'],
+  },
+  {
+    title: 'Core Domain Objects',
+    entries: ['User', 'Rider', 'Driver', 'Profile', 'RideOffer', 'RideRequest', 'JoinRequest', 'RideMatch', 'Rating'],
+  },
+  {
+    title: 'Enforced Business Rules',
+    entries: [
+      'No overbooking: requested seats must be valid.',
+      'RideMatch is created only after explicit acceptance.',
+      'Seat and request states are updated immediately.',
+      'Trust info appears before confirmation actions.',
+    ],
+  },
+];
+
+const scopeRows = [
+  {
+    inScope: 'Search offers, join flow, one-off rider request flow',
+    outScope: 'Payments, route optimization algorithms, live chat',
+  },
+  {
+    inScope: 'Trust signals with profile and rating summary',
+    outScope: 'Complex multi-role permission systems',
+  },
+  {
+    inScope: 'Assignment-focused clear state transitions',
+    outScope: 'Microservices and production-scale distributed architecture',
   },
 ];
 
 const faqs = [
   {
-    q: 'Is this a full marketplace with bidding and payments?',
-    a: 'No. The design intentionally stays assignment-sized: no bidding, no payment, and one final accepted one-off match.',
+    q: 'Does this site represent implemented behavior or only concept design?',
+    a: 'This page introduces implemented behavior from your current codebase, including Rider, Driver Hub, and Admin control flows.',
   },
   {
-    q: 'Can I cancel a one-off request later?',
-    a: 'Yes. Riders can cancel unmatched OPEN one-off requests. Once MATCHED, cancellation is blocked to keep trip integrity.',
+    q: 'Why emphasize trust so much in the flow?',
+    a: 'Your design requires trust checking before acceptance, so profile quality and rating visibility are treated as first-class UX elements.',
   },
   {
-    q: 'Can both rider and driver see history?',
-    a: 'Yes. My Trips shows confirmed matches, and one-off request/offer history is available for both roles.',
+    q: 'Can reviewers quickly map this to UML and use cases?',
+    a: 'Yes. The page explains the three approved use cases, domain model language, and key rules used in backend transitions.',
+  },
+  {
+    q: 'Can this intro be used as final presentation material?',
+    a: 'Yes. It is intentionally content-rich and visually polished to serve as a project showcase and quick technical walkthrough.',
   },
 ];
 
 function IntroPage() {
   const { isAuthenticated } = useAuth();
-  const [activeStory, setActiveStory] = useState(0);
+  const [activeJourney, setActiveJourney] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navActionsRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setActiveStory((prev) => (prev + 1) % stories.length);
-    }, 5200);
+      setActiveJourney((prev) => (prev + 1) % journeyPanels.length);
+    }, 6200);
     return () => clearInterval(timer);
   }, []);
 
@@ -116,8 +216,10 @@ function IntroPage() {
     };
   }, [mobileMenuOpen]);
 
+  const currentJourney = journeyPanels[activeJourney];
+
   return (
-    <div className="intro-shell">
+    <div className="intro-shell intro-shell-rich">
       <header className="intro-nav">
         <div className="intro-nav-inner">
           <Link
@@ -148,8 +250,9 @@ function IntroPage() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <a className="intro-link" href="#overview">Overview</a>
+              <a className="intro-link" href="#capabilities">Capabilities</a>
               <a className="intro-link" href="#use-cases">Use Cases</a>
-              <a className="intro-link" href="#stories">Live Demo Flow</a>
+              <a className="intro-link" href="#architecture">Architecture</a>
               <a className="intro-link" href="#faq">FAQ</a>
               {isAuthenticated ? (
                 <Link className="btn" to="/">Open App</Link>
@@ -164,15 +267,17 @@ function IntroPage() {
         </div>
       </header>
 
-      <main className="intro-main">
-        <section className="intro-hero" id="overview">
-          <div className="intro-hero-grid">
+      <main className="intro-main intro-main-rich">
+        <section className="intro-hero intro-hero-rich" id="overview">
+          <div className="intro-hero-grid intro-hero-grid-rich">
             <div>
-              <span className="intro-kicker">Assignment-ready product demo</span>
-              <h1 className="intro-title">NeighbourLink helps communities match rides faster and with clearer trust signals.</h1>
+              <span className="intro-kicker">NeighbourLink Product Showcase</span>
+              <h1 className="intro-title">
+                A fully polished static project site for your Rider, Driver, and Admin business flows.
+              </h1>
               <p className="intro-lead">
-                This interface focuses on practical rider and driver workflows: search offers, request to join,
-                post one-off requests, review offers, and confirm a single final match.
+                This page translates your implemented codebase into a high-quality story: business context,
+                approved use cases, trust logic, architecture decisions, and admin governance experience.
               </p>
               <div className="intro-hero-actions">
                 {isAuthenticated ? (
@@ -185,85 +290,168 @@ function IntroPage() {
                 )}
               </div>
               <div className="intro-hero-points">
-                <span>One-off request ends with one effective accepted match.</span>
-                <span>Driver and rider can both review trip history.</span>
-                <span>Profile and trust data remain visible before acceptance.</span>
+                <span>Three approved use cases presented end to end.</span>
+                <span>Trust-first acceptance logic made explicit for reviewers.</span>
+                <span>Backend and frontend responsibilities explained in one place.</span>
               </div>
             </div>
 
-            <div className="intro-media">
-              <img className="intro-image" src={communityPlaceholder} alt="NeighbourLink introduction placeholder" />
-              <div className="floating-note">
-                <strong>Live status: Ready</strong>
-                <small>Backend + Frontend running locally</small>
+            <div className="intro-media intro-media-rich">
+              <div className="intro-gallery">
+                <img className="intro-gallery-main" src={showcaseImages.city} alt="Urban community mobility network" />
+                <img className="intro-gallery-small" src={showcaseImages.team} alt="Community collaboration" />
+                <img className="intro-gallery-small" src={showcaseImages.trust} alt="Trust and safety process" />
               </div>
-              <div className="intro-stats">
+              <div className="floating-note">
+                <strong>Presentation Ready</strong>
+                <small>Rich business + technical overview in one page</small>
+              </div>
+              <div className="intro-stats intro-stats-rich">
                 <article className="stat-card">
                   <strong>3</strong>
                   <span>Approved use cases</span>
                 </article>
                 <article className="stat-card">
-                  <strong>1</strong>
-                  <span>Final accepted one-off match</span>
+                  <strong>9+</strong>
+                  <span>Core domain entities surfaced</span>
                 </article>
                 <article className="stat-card">
-                  <strong>2</strong>
-                  <span>Roles: Rider + Driver</span>
+                  <strong>1</strong>
+                  <span>Admin role with full governance panel</span>
+                </article>
+                <article className="stat-card">
+                  <strong>Mobile</strong>
+                  <span>Responsive fit for 320px to desktop</span>
                 </article>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="intro-section" id="use-cases">
-          <h2 className="intro-section-title">Product Sections</h2>
+        <section className="intro-section intro-proof-strip">
+          <article>
+            <strong>Business Focus</strong>
+            <p>Ride matching and confirmation with clear boundaries.</p>
+          </article>
+          <article>
+            <strong>Trust Layer</strong>
+            <p>Profile, rating, and verification integrated before acceptance.</p>
+          </article>
+          <article>
+            <strong>Operational Clarity</strong>
+            <p>Driver Hub and Admin Console keep state transitions explicit.</p>
+          </article>
+        </section>
+
+        <section className="intro-section" id="capabilities">
+          <h2 className="intro-section-title">Capability Matrix</h2>
           <p className="intro-section-subtitle">
-            A unified visual style with placeholders ready for your final real images.
+            A product-grade summary of what your current business code already supports.
           </p>
-          <div className="feature-grid">
-            {featureCards.map((feature) => (
-              <article className="feature-card" key={feature.title}>
-                <img src={feature.image} alt={`${feature.title} placeholder`} />
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
+          <div className="intro-capability-grid">
+            {capabilityCards.map((card) => (
+              <article key={card.title} className="intro-capability-card">
+                <h3>{card.title}</h3>
+                <p>{card.detail}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="intro-section" id="stories">
-          <h2 className="intro-section-title">Interactive Demo Highlights</h2>
+        <section className="intro-section" id="use-cases">
+          <h2 className="intro-section-title">Approved Use Cases in Action</h2>
           <p className="intro-section-subtitle">
-            Click each flow card. It also auto-rotates to create a lightweight interactive feel.
+            Structured walkthrough aligned to your assignment scope and implementation language.
+          </p>
+          <div className="intro-usecase-grid">
+            {useCases.map((item) => (
+              <article key={item.id} className="intro-usecase-card">
+                <p className="intro-usecase-id">{item.id}</p>
+                <h3>{item.title}</h3>
+                <p>{item.summary}</p>
+                <ul>
+                  {item.flow.map((step) => (
+                    <li key={step}>{step}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="intro-section" id="journeys">
+          <h2 className="intro-section-title">Role Journey Showcase</h2>
+          <p className="intro-section-subtitle">
+            Tap each role to review responsibilities, UX priorities, and implemented outcomes.
           </p>
           <div className="story-tabs">
-            {stories.map((story, idx) => (
+            {journeyPanels.map((panel, idx) => (
               <button
-                key={story.id}
+                key={panel.id}
                 type="button"
-                className={`story-chip ${idx === activeStory ? 'active' : ''}`}
-                onClick={() => setActiveStory(idx)}
+                className={`story-chip ${idx === activeJourney ? 'active' : ''}`}
+                onClick={() => setActiveJourney(idx)}
               >
-                {story.label}
+                {panel.label}
               </button>
             ))}
           </div>
-          <div className="story-panel">
-            <article className="story-panel-content">
-              <h3>{stories[activeStory].title}</h3>
+          <div className="intro-role-panel">
+            <article className="intro-role-panel-content">
+              <h3>{currentJourney.title}</h3>
+              <p>{currentJourney.description}</p>
               <ul>
-                {stories[activeStory].points.map((point) => (
+                {currentJourney.points.map((point) => (
                   <li key={point}>{point}</li>
                 ))}
               </ul>
             </article>
-            <img className="intro-image" src={stories[activeStory].image} alt={`${stories[activeStory].label} placeholder`} />
+            <img className="intro-role-image" src={currentJourney.image} alt={`${currentJourney.label} visual`} />
+          </div>
+        </section>
+
+        <section className="intro-section" id="architecture">
+          <h2 className="intro-section-title">Architecture and Domain Alignment</h2>
+          <p className="intro-section-subtitle">
+            Technical snapshot for marker-friendly review: stack, rules, and domain vocabulary.
+          </p>
+          <div className="intro-architecture-grid">
+            {architecturePanels.map((panel) => (
+              <article key={panel.title} className="intro-architecture-card">
+                <h3>{panel.title}</h3>
+                <ul>
+                  {panel.entries.map((entry) => (
+                    <li key={entry}>{entry}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+          <div className="intro-scope-table-wrap">
+            <table className="intro-scope-table">
+              <thead>
+                <tr>
+                  <th>In Scope</th>
+                  <th>Out of Scope</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scopeRows.map((row) => (
+                  <tr key={`${row.inScope}-${row.outScope}`}>
+                    <td>{row.inScope}</td>
+                    <td>{row.outScope}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
 
         <section className="intro-section" id="faq">
-          <h2 className="intro-section-title">Quick FAQ</h2>
-          <p className="intro-section-subtitle">Simple collapsible answers for reviewers and tutors.</p>
+          <h2 className="intro-section-title">Project FAQ</h2>
+          <p className="intro-section-subtitle">
+            Ready-to-use answers for tutor demo, viva discussion, and final review slides.
+          </p>
           <div className="faq-list">
             {faqs.map((faq, idx) => {
               const expanded = openFaq === idx;
@@ -286,7 +474,7 @@ function IntroPage() {
       </main>
 
       <footer className="intro-footer">
-        NeighbourLink demo interface - ready for your final image replacement and presentation
+        NeighbourLink polished static showcase - built from your real business implementation
       </footer>
     </div>
   );
