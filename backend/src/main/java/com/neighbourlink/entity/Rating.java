@@ -23,6 +23,10 @@ public class Rating {
     @JoinColumn(name = "profile_id", nullable = false)
     private Profile profile;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rater_user_id", nullable = false)
+    private User raterUser;
+
     @Column(nullable = false)
     private Integer score;
 
@@ -46,6 +50,14 @@ public class Rating {
 
     public void setProfile(Profile profile) {
         this.profile = profile;
+    }
+
+    public User getRaterUser() {
+        return raterUser;
+    }
+
+    public void setRaterUser(User raterUser) {
+        this.raterUser = raterUser;
     }
 
     public Integer getScore() {

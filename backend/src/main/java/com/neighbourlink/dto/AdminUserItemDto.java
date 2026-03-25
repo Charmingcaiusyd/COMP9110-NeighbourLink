@@ -15,6 +15,10 @@ public class AdminUserItemDto {
     private final String driverLicenceVerifiedStatus;
     private final String driverVehicleInfo;
     private final Integer driverSpareSeatCapacity;
+    private final String driverLicenceDocumentPath;
+    private final String driverSpareSeatProofDocumentPath;
+    private final String driverVehicleRegoDocumentPath;
+    private final String driverVerificationNotes;
     private final String riderPreferredTravelTimes;
     private final String riderUsualDestinations;
 
@@ -33,6 +37,10 @@ public class AdminUserItemDto {
             String driverLicenceVerifiedStatus,
             String driverVehicleInfo,
             Integer driverSpareSeatCapacity,
+            String driverLicenceDocumentPath,
+            String driverSpareSeatProofDocumentPath,
+            String driverVehicleRegoDocumentPath,
+            String driverVerificationNotes,
             String riderPreferredTravelTimes,
             String riderUsualDestinations
     ) {
@@ -50,6 +58,10 @@ public class AdminUserItemDto {
         this.driverLicenceVerifiedStatus = driverLicenceVerifiedStatus;
         this.driverVehicleInfo = driverVehicleInfo;
         this.driverSpareSeatCapacity = driverSpareSeatCapacity;
+        this.driverLicenceDocumentPath = driverLicenceDocumentPath;
+        this.driverSpareSeatProofDocumentPath = driverSpareSeatProofDocumentPath;
+        this.driverVehicleRegoDocumentPath = driverVehicleRegoDocumentPath;
+        this.driverVerificationNotes = driverVerificationNotes;
         this.riderPreferredTravelTimes = riderPreferredTravelTimes;
         this.riderUsualDestinations = riderUsualDestinations;
     }
@@ -108,6 +120,22 @@ public class AdminUserItemDto {
 
     public Integer getDriverSpareSeatCapacity() {
         return driverSpareSeatCapacity;
+    }
+
+    public String getDriverLicenceDocumentPath() {
+        return driverLicenceDocumentPath;
+    }
+
+    public String getDriverSpareSeatProofDocumentPath() {
+        return driverSpareSeatProofDocumentPath;
+    }
+
+    public String getDriverVehicleRegoDocumentPath() {
+        return driverVehicleRegoDocumentPath;
+    }
+
+    public String getDriverVerificationNotes() {
+        return driverVerificationNotes;
     }
 
     public String getRiderPreferredTravelTimes() {

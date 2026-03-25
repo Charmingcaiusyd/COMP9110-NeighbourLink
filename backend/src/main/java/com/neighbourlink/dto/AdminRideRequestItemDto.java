@@ -11,6 +11,7 @@ public class AdminRideRequestItemDto {
     private final LocalDate tripDate;
     private final String tripTime;
     private final Integer passengerCount;
+    private final String notes;
     private final String status;
 
     public AdminRideRequestItemDto(
@@ -22,6 +23,7 @@ public class AdminRideRequestItemDto {
             LocalDate tripDate,
             String tripTime,
             Integer passengerCount,
+            String notes,
             String status
     ) {
         this.rideRequestId = rideRequestId;
@@ -32,6 +34,7 @@ public class AdminRideRequestItemDto {
         this.tripDate = tripDate;
         this.tripTime = tripTime;
         this.passengerCount = passengerCount;
+        this.notes = notes;
         this.status = status;
     }
 
@@ -65,6 +68,10 @@ public class AdminRideRequestItemDto {
 
     public Integer getPassengerCount() {
         return passengerCount;
+    }
+
+    public String getNotes() {
+        return notes;
     }
 
     public String getStatus() {

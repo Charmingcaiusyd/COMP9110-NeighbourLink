@@ -12,6 +12,13 @@ function RegisterPage() {
     role: 'RIDER',
     phone: '',
     suburb: '',
+    driverVehicleInfo: '',
+    driverSpareSeatCapacity: '1',
+  });
+  const [driverFiles, setDriverFiles] = useState({
+    driverLicenceFile: null,
+    spareSeatCapacityProofFile: null,
+    vehicleRegoFile: null,
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -26,6 +33,13 @@ function RegisterPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
+  function updateDriverFile(name, file) {
+    setDriverFiles((prev) => ({
+      ...prev,
+      [name]: file || null,
+    }));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
@@ -33,17 +47,47 @@ function RegisterPage() {
       setError('Please complete full name, email, and password.');
       return;
     }
+    if (form.role === 'DRIVER') {
+      if (!form.driverVehicleInfo.trim()) {
+        setError('Driver vehicle info is required.');
+        return;
+      }
+      const seatCapacity = Number(form.driverSpareSeatCapacity);
+      if (!Number.isInteger(seatCapacity) || seatCapacity < 1) {
+        setError('Driver spare seat capacity must be a whole number >= 1.');
+        return;
+      }
+      if (!driverFiles.driverLicenceFile || !driverFiles.spareSeatCapacityProofFile || !driverFiles.vehicleRegoFile) {
+        setError('Driver registration requires licence, spare seat proof, and vehicle rego files.');
+        return;
+      }
+    }
 
     setSubmitting(true);
     try {
-      await registerAccount({
+      const payload = {
         fullName: form.fullName.trim(),
         email: form.email.trim(),
         password: form.password,
         role: form.role,
         phone: form.phone.trim() || null,
         suburb: form.suburb.trim() || null,
-      });
+        driverVehicleInfo: form.role === 'DRIVER' ? form.driverVehicleInfo.trim() : null,
+        driverSpareSeatCapacity: form.role === 'DRIVER' ? Number(form.driverSpareSeatCapacity) : null,
+      };
+      if (form.role === 'DRIVER') {
+        const multipartPayload = new FormData();
+        multipartPayload.append(
+          'payload',
+          new Blob([JSON.stringify(payload)], { type: 'application/json' }),
+        );
+        multipartPayload.append('driverLicenceFile', driverFiles.driverLicenceFile);
+        multipartPayload.append('spareSeatCapacityProofFile', driverFiles.spareSeatCapacityProofFile);
+        multipartPayload.append('vehicleRegoFile', driverFiles.vehicleRegoFile);
+        await registerAccount(multipartPayload);
+      } else {
+        await registerAccount(payload);
+      }
       navigate('/', { replace: true });
     } catch (registerError) {
       setError(registerError.message || 'Unable to register right now.');
@@ -119,6 +163,56 @@ function RegisterPage() {
               disabled={submitting}
             />
           </label>
+          {form.role === 'DRIVER' ? (
+            <>
+              <label>
+                Vehicle info
+                <input
+                  type="text"
+                  value={form.driverVehicleInfo}
+                  onChange={(event) => updateField('driverVehicleInfo', event.target.value)}
+                  disabled={submitting}
+                />
+              </label>
+              <label>
+                Spare seat capacity
+                <input
+                  type="number"
+                  min="1"
+                  value={form.driverSpareSeatCapacity}
+                  onChange={(event) => updateField('driverSpareSeatCapacity', event.target.value)}
+                  disabled={submitting}
+                />
+              </label>
+              <label>
+                Driver licence file (PDF/JPG/PNG)
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(event) => updateDriverFile('driverLicenceFile', event.target.files?.[0])}
+                  disabled={submitting}
+                />
+              </label>
+              <label>
+                Spare seat capacity proof (PDF/JPG/PNG)
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(event) => updateDriverFile('spareSeatCapacityProofFile', event.target.files?.[0])}
+                  disabled={submitting}
+                />
+              </label>
+              <label>
+                Vehicle rego file (PDF/JPG/PNG)
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(event) => updateDriverFile('vehicleRegoFile', event.target.files?.[0])}
+                  disabled={submitting}
+                />
+              </label>
+            </>
+          ) : null}
           {error ? <p className="status-error">{error}</p> : null}
           <div className="form-actions">
             <button className="btn" type="submit" disabled={submitting}>

@@ -2,38 +2,48 @@ package com.neighbourlink.dto;
 
 import java.time.LocalDateTime;
 
-public class RideRequestOfferForRiderItemDto {
-    private Long offerId;
-    private Long driverId;
-    private String driverName;
-    private Integer proposedSeats;
-    private String meetingPoint;
-    private String status;
-    private LocalDateTime createdAt;
-    private DriverTrustSummaryDto driver;
+public class AdminRideRequestOfferItemDto {
+    private final Long offerId;
+    private final Long rideRequestId;
+    private final Long driverId;
+    private final String driverName;
+    private final Long riderId;
+    private final String riderName;
+    private final Integer proposedSeats;
+    private final String meetingPoint;
+    private final String status;
+    private final LocalDateTime createdAt;
 
-    public RideRequestOfferForRiderItemDto(
+    public AdminRideRequestOfferItemDto(
             Long offerId,
+            Long rideRequestId,
             Long driverId,
             String driverName,
+            Long riderId,
+            String riderName,
             Integer proposedSeats,
             String meetingPoint,
             String status,
-            LocalDateTime createdAt,
-            DriverTrustSummaryDto driver
+            LocalDateTime createdAt
     ) {
         this.offerId = offerId;
+        this.rideRequestId = rideRequestId;
         this.driverId = driverId;
         this.driverName = driverName;
+        this.riderId = riderId;
+        this.riderName = riderName;
         this.proposedSeats = proposedSeats;
         this.meetingPoint = meetingPoint;
         this.status = status;
         this.createdAt = createdAt;
-        this.driver = driver;
     }
 
     public Long getOfferId() {
         return offerId;
+    }
+
+    public Long getRideRequestId() {
+        return rideRequestId;
     }
 
     public Long getDriverId() {
@@ -42,6 +52,14 @@ public class RideRequestOfferForRiderItemDto {
 
     public String getDriverName() {
         return driverName;
+    }
+
+    public Long getRiderId() {
+        return riderId;
+    }
+
+    public String getRiderName() {
+        return riderName;
     }
 
     public Integer getProposedSeats() {
@@ -58,9 +76,5 @@ public class RideRequestOfferForRiderItemDto {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
-    }
-
-    public DriverTrustSummaryDto getDriver() {
-        return driver;
     }
 }

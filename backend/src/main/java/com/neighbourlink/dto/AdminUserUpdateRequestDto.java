@@ -2,6 +2,7 @@ package com.neighbourlink.dto;
 
 public class AdminUserUpdateRequestDto {
     private String fullName;
+    private String email;
     private String phone;
     private String suburb;
     private String accountStatus;
@@ -11,6 +12,7 @@ public class AdminUserUpdateRequestDto {
     private String driverLicenceVerifiedStatus;
     private String driverVehicleInfo;
     private Integer driverSpareSeatCapacity;
+    private String driverVerificationNotes;
     private String riderPreferredTravelTimes;
     private String riderUsualDestinations;
 
@@ -28,6 +30,14 @@ public class AdminUserUpdateRequestDto {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getSuburb() {
@@ -92,6 +102,14 @@ public class AdminUserUpdateRequestDto {
 
     public void setDriverSpareSeatCapacity(Integer driverSpareSeatCapacity) {
         this.driverSpareSeatCapacity = driverSpareSeatCapacity;
+    }
+
+    public String getDriverVerificationNotes() {
+        return driverVerificationNotes;
+    }
+
+    public void setDriverVerificationNotes(String driverVerificationNotes) {
+        this.driverVerificationNotes = driverVerificationNotes;
     }
 
     public String getRiderPreferredTravelTimes() {

@@ -4,7 +4,9 @@ import com.neighbourlink.entity.RideOffer;
 import com.neighbourlink.entity.RideOfferStatus;
 import java.util.List;
 import java.util.Optional;
+import javax.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -36,6 +38,10 @@ public interface RideOfferRepository extends JpaRepository<RideOffer, Long> {
             + "join fetch ro.driver d "
             + "order by ro.departureDate desc, ro.id desc")
     List<RideOffer> findAllWithDriverOrderByRecent();
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select ro from RideOffer ro where ro.id = :id")
+    Optional<RideOffer> findByIdForUpdate(@Param("id") Long id);
 
     long countByStatus(RideOfferStatus status);
 }

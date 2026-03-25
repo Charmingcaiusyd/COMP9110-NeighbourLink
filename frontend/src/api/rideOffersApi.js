@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 function resolveErrorMessage(status, backendMessage) {
   if (backendMessage && backendMessage.trim() !== '') {
@@ -263,9 +263,55 @@ export async function getAdminRideOffers(adminSessionKey) {
   return response.json();
 }
 
+export async function updateAdminRideOffer(adminSessionKey, offerId, requestBody) {
+  const response = await fetch(`${API_BASE_URL}/admin/ride-offers/${offerId}`, {
+    method: 'PATCH',
+    headers: buildAdminHeaders(adminSessionKey, true),
+    body: JSON.stringify(requestBody),
+  });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
 export async function getAdminRideRequests(adminSessionKey) {
   const response = await fetch(`${API_BASE_URL}/admin/ride-requests`, {
     headers: buildAdminHeaders(adminSessionKey),
+  });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function updateAdminRideRequest(adminSessionKey, rideRequestId, requestBody) {
+  const response = await fetch(`${API_BASE_URL}/admin/ride-requests/${rideRequestId}`, {
+    method: 'PATCH',
+    headers: buildAdminHeaders(adminSessionKey, true),
+    body: JSON.stringify(requestBody),
+  });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function getAdminRideRequestOffers(adminSessionKey) {
+  const response = await fetch(`${API_BASE_URL}/admin/ride-request-offers`, {
+    headers: buildAdminHeaders(adminSessionKey),
+  });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function updateAdminRideRequestOffer(adminSessionKey, offerId, requestBody) {
+  const response = await fetch(`${API_BASE_URL}/admin/ride-request-offers/${offerId}`, {
+    method: 'PATCH',
+    headers: buildAdminHeaders(adminSessionKey, true),
+    body: JSON.stringify(requestBody),
   });
   if (!response.ok) {
     await throwApiError(response);
@@ -283,6 +329,18 @@ export async function getAdminJoinRequests(adminSessionKey) {
   return response.json();
 }
 
+export async function updateAdminJoinRequest(adminSessionKey, joinRequestId, requestBody) {
+  const response = await fetch(`${API_BASE_URL}/admin/join-requests/${joinRequestId}`, {
+    method: 'PATCH',
+    headers: buildAdminHeaders(adminSessionKey, true),
+    body: JSON.stringify(requestBody),
+  });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
 export async function getAdminRideMatches(adminSessionKey) {
   const response = await fetch(`${API_BASE_URL}/admin/ride-matches`, {
     headers: buildAdminHeaders(adminSessionKey),
@@ -293,14 +351,54 @@ export async function getAdminRideMatches(adminSessionKey) {
   return response.json();
 }
 
-export async function register(requestBody) {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+export async function updateAdminRideMatch(adminSessionKey, rideMatchId, requestBody) {
+  const response = await fetch(`${API_BASE_URL}/admin/ride-matches/${rideMatchId}`, {
+    method: 'PATCH',
+    headers: buildAdminHeaders(adminSessionKey, true),
     body: JSON.stringify(requestBody),
   });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function getAdminRatings(adminSessionKey) {
+  const response = await fetch(`${API_BASE_URL}/admin/ratings`, {
+    headers: buildAdminHeaders(adminSessionKey),
+  });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function updateAdminRating(adminSessionKey, ratingId, requestBody) {
+  const response = await fetch(`${API_BASE_URL}/admin/ratings/${ratingId}`, {
+    method: 'PATCH',
+    headers: buildAdminHeaders(adminSessionKey, true),
+    body: JSON.stringify(requestBody),
+  });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function register(requestBody) {
+  const isFormData = typeof FormData !== 'undefined' && requestBody instanceof FormData;
+  const response = await fetch(`${API_BASE_URL}/auth/register`, isFormData
+    ? {
+      method: 'POST',
+      body: requestBody,
+    }
+    : {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
   if (!response.ok) {
     await throwApiError(response);
   }
@@ -353,6 +451,20 @@ export async function getRiderTrips(riderId) {
 
 export async function getDriverTrips(driverId) {
   const response = await fetch(`${API_BASE_URL}/drivers/${driverId}/trips`);
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function createRating(requestBody) {
+  const response = await fetch(`${API_BASE_URL}/ratings`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  });
   if (!response.ok) {
     await throwApiError(response);
   }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   cancelRideRequest,
+  createRating,
   getDriverRideRequestOffers,
   getDriverTrips,
   getRiderRideRequests,
@@ -24,6 +25,33 @@ function isUpcomingTrip(trip, now = new Date()) {
   return tripDateTime.getTime() >= now.getTime();
 }
 
+function resolveTripKey(trip) {
+  if (trip?.rideMatchId != null) {
+    return String(trip.rideMatchId);
+  }
+  return `${trip?.driverId || 'driver'}-${trip?.riderId || 'rider'}-${trip?.tripDate || 'date'}-${trip?.tripTime || 'time'}`;
+}
+
+function resolveRatingTarget(trip, role) {
+  if (!trip) {
+    return { targetUserId: null, targetName: 'User' };
+  }
+
+  if (role === 'RIDER') {
+    const driverId = Number(trip.driverId);
+    return {
+      targetUserId: Number.isInteger(driverId) && driverId > 0 ? driverId : null,
+      targetName: trip.driverName || 'Driver',
+    };
+  }
+
+  const riderId = Number(trip.riderId);
+  return {
+    targetUserId: Number.isInteger(riderId) && riderId > 0 ? riderId : null,
+    targetName: trip.riderName || 'Rider',
+  };
+}
+
 function MyTripsPage() {
   const { userId, role } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -35,6 +63,7 @@ function MyTripsPage() {
   const [cancellingRequestId, setCancellingRequestId] = useState(null);
   const [requestActionError, setRequestActionError] = useState('');
   const [requestActionMessage, setRequestActionMessage] = useState('');
+  const [ratingState, setRatingState] = useState({});
 
   const filteredTrips = useMemo(() => (
     trips.filter((trip) => (tripFilter === 'UPCOMING' ? isUpcomingTrip(trip) : !isUpcomingTrip(trip)))
@@ -74,6 +103,7 @@ function MyTripsPage() {
           setDriverOfferHistory([]);
           setRequestActionError('');
           setRequestActionMessage('');
+          setRatingState({});
         }
       })
       .finally(() => {
@@ -110,6 +140,74 @@ function MyTripsPage() {
       setRequestActionError(cancelError.message || 'Unable to cancel this request.');
     } finally {
       setCancellingRequestId(null);
+    }
+  }
+
+  function getRatingFormState(tripKey) {
+    return ratingState[tripKey] || {
+      score: '5',
+      comment: '',
+      submitting: false,
+      error: '',
+      message: '',
+      submitted: false,
+    };
+  }
+
+  function updateRatingFormState(tripKey, patch) {
+    setRatingState((prev) => ({
+      ...prev,
+      [tripKey]: {
+        ...getRatingFormState(tripKey),
+        ...patch,
+      },
+    }));
+  }
+
+  async function handleSubmitRating(trip) {
+    const tripKey = resolveTripKey(trip);
+    const form = getRatingFormState(tripKey);
+    const { targetUserId, targetName } = resolveRatingTarget(trip, role);
+
+    if (!targetUserId) {
+      updateRatingFormState(tripKey, {
+        error: 'Unable to identify who should be rated for this trip.',
+      });
+      return;
+    }
+
+    const score = Number(form.score);
+    if (!Number.isInteger(score) || score < 1 || score > 5) {
+      updateRatingFormState(tripKey, {
+        error: 'Score must be a whole number from 1 to 5.',
+      });
+      return;
+    }
+
+    updateRatingFormState(tripKey, {
+      submitting: true,
+      error: '',
+      message: '',
+    });
+
+    try {
+      const response = await createRating({
+        raterUserId: userId,
+        targetUserId,
+        score,
+        comment: form.comment.trim() || null,
+      });
+      const resolvedTargetName = response?.targetUserName || targetName;
+      updateRatingFormState(tripKey, {
+        submitting: false,
+        submitted: true,
+        message: `Rated ${resolvedTargetName} with ${score}/5.`,
+      });
+    } catch (ratingError) {
+      updateRatingFormState(tripKey, {
+        submitting: false,
+        error: ratingError.message || 'Unable to submit rating right now.',
+      });
     }
   }
 
@@ -156,19 +254,71 @@ function MyTripsPage() {
 
       {!loading && !error && filteredTrips.length > 0 ? (
         <section className="results-grid">
-          {filteredTrips.map((trip) => (
-            <article key={trip.rideMatchId} className="result-card">
-              <p><strong>Match ID:</strong> {trip.rideMatchId}</p>
-              <p><strong>Type:</strong> {trip.tripType}</p>
-              <p><strong>Driver:</strong> {trip.driverName}</p>
-              <p><strong>Rider:</strong> {trip.riderName}</p>
-              <p><strong>Route:</strong> {(trip.originAddress || trip.origin)} to {(trip.destinationAddress || trip.destination)}</p>
-              <p><strong>Date and time:</strong> {trip.tripDate} {trip.tripTime}</p>
-              <p><strong>Meeting point:</strong> {trip.meetingPoint || 'Not provided'}</p>
-              <p><strong>Status:</strong> {trip.tripStatus}</p>
-              <TripRouteMap trip={trip} />
-            </article>
-          ))}
+          {filteredTrips.map((trip) => {
+            const tripKey = resolveTripKey(trip);
+            const form = getRatingFormState(tripKey);
+            const isHistoryTrip = !isUpcomingTrip(trip);
+            const canRate = isHistoryTrip && trip.tripStatus === 'CONFIRMED';
+            const { targetUserId, targetName } = resolveRatingTarget(trip, role);
+
+            return (
+              <article key={tripKey} className="result-card">
+                <p><strong>Match ID:</strong> {trip.rideMatchId}</p>
+                <p><strong>Type:</strong> {trip.tripType}</p>
+                <p><strong>Driver:</strong> {trip.driverName}</p>
+                <p><strong>Rider:</strong> {trip.riderName}</p>
+                <p><strong>Route:</strong> {(trip.originAddress || trip.origin)} to {(trip.destinationAddress || trip.destination)}</p>
+                <p><strong>Date and time:</strong> {trip.tripDate} {trip.tripTime}</p>
+                <p><strong>Meeting point:</strong> {trip.meetingPoint || 'Not provided'}</p>
+                <p><strong>Status:</strong> {trip.tripStatus}</p>
+                <TripRouteMap trip={trip} />
+
+                {canRate ? (
+                  <div className="trip-rating-box">
+                    <p><strong>Rate this trip partner:</strong> {targetName}</p>
+                    <div className="form-grid rating-form">
+                      <label>
+                        Score
+                        <select
+                          value={form.score}
+                          onChange={(event) => updateRatingFormState(tripKey, { score: event.target.value })}
+                          disabled={form.submitting || !targetUserId}
+                        >
+                          <option value="5">5 - Excellent</option>
+                          <option value="4">4 - Good</option>
+                          <option value="3">3 - Okay</option>
+                          <option value="2">2 - Poor</option>
+                          <option value="1">1 - Very poor</option>
+                        </select>
+                      </label>
+                      <label>
+                        Comment (optional)
+                        <textarea
+                          placeholder="Share short feedback to support trust."
+                          value={form.comment}
+                          onChange={(event) => updateRatingFormState(tripKey, { comment: event.target.value })}
+                          maxLength={300}
+                          disabled={form.submitting || !targetUserId}
+                        />
+                      </label>
+                      {form.error ? <p className="status-error">{form.error}</p> : null}
+                      {form.message ? <p>{form.message}</p> : null}
+                      <div className="form-actions">
+                        <button
+                          className="btn btn-secondary"
+                          type="button"
+                          onClick={() => handleSubmitRating(trip)}
+                          disabled={form.submitting || !targetUserId}
+                        >
+                          {form.submitting ? 'Submitting...' : form.submitted ? 'Submit Again' : 'Submit Rating'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
         </section>
       ) : null}
 

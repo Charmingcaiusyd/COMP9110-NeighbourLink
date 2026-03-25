@@ -17,3 +17,7 @@ spring:
 
 server:
   port: 0
+
+neighbourlink:
+  storage:
+    driver-documents-dir: ./target/test-driver-documents

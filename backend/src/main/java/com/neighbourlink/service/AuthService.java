@@ -16,13 +16,21 @@ import com.neighbourlink.repository.DriverRepository;
 import com.neighbourlink.repository.ProfileRepository;
 import com.neighbourlink.repository.RiderRepository;
 import com.neighbourlink.repository.UserRepository;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -39,6 +47,7 @@ public class AuthService {
     private final String adminPassword;
     private final String adminFullName;
     private final String adminSessionKey;
+    private final String driverDocumentsRootDir;
 
     public AuthService(
             UserRepository userRepository,
@@ -50,7 +59,8 @@ public class AuthService {
             @Value("${neighbourlink.admin.email:admin@neighbourlink.local}") String adminEmail,
             @Value("${neighbourlink.admin.password:admin12345}") String adminPassword,
             @Value("${neighbourlink.admin.full-name:NeighbourLink Admin}") String adminFullName,
-            @Value("${neighbourlink.admin.session-key:NL-ADMIN-SESSION-KEY}") String adminSessionKey
+            @Value("${neighbourlink.admin.session-key:NL-ADMIN-SESSION-KEY}") String adminSessionKey,
+            @Value("${neighbourlink.storage.driver-documents-dir:./data/driver-documents}") String driverDocumentsRootDir
     ) {
         this.userRepository = userRepository;
         this.riderRepository = riderRepository;
@@ -62,6 +72,10 @@ public class AuthService {
         this.adminPassword = normalizeRequired(adminPassword, "Admin password must not be blank");
         this.adminFullName = normalizeRequired(adminFullName, "Admin full name must not be blank");
         this.adminSessionKey = normalizeRequired(adminSessionKey, "Admin session key must not be blank");
+        this.driverDocumentsRootDir = normalizeRequired(
+                driverDocumentsRootDir,
+                "Driver documents root dir must not be blank"
+        );
     }
 
     public AuthResponseDto login(AuthLoginRequestDto request) {
@@ -91,6 +105,33 @@ public class AuthService {
 
     @Transactional
     public AuthResponseDto register(AuthRegisterRequestDto request) {
+        return registerInternal(request, null, null, null, true);
+    }
+
+    @Transactional
+    public AuthResponseDto registerWithDriverDocuments(
+            AuthRegisterRequestDto request,
+            MultipartFile driverLicenceFile,
+            MultipartFile spareSeatCapacityProofFile,
+            MultipartFile vehicleRegoFile
+    ) {
+        return registerInternal(
+                request,
+                driverLicenceFile,
+                spareSeatCapacityProofFile,
+                vehicleRegoFile,
+                true
+        );
+    }
+
+    @Transactional
+    private AuthResponseDto registerInternal(
+            AuthRegisterRequestDto request,
+            MultipartFile driverLicenceFile,
+            MultipartFile spareSeatCapacityProofFile,
+            MultipartFile vehicleRegoFile,
+            boolean requireDriverDocuments
+    ) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
@@ -108,6 +149,7 @@ public class AuthService {
         String role = parseRole(request.getRole());
         User savedUser;
         if ("DRIVER".equals(role)) {
+            validateDriverRegistrationFields(request, requireDriverDocuments, driverLicenceFile, spareSeatCapacityProofFile, vehicleRegoFile);
             Driver driver = new Driver();
             driver.setFullName(fullName);
             driver.setEmail(email);
@@ -115,8 +157,23 @@ public class AuthService {
             driver.setSuburb(normalizeOptional(request.getSuburb()));
             driver.setAccountStatus(AccountStatus.ACTIVE);
             driver.setLicenceVerifiedStatus(VerificationStatus.PENDING);
-            driver.setSpareSeatCapacity(1);
-            savedUser = driverRepository.save(driver);
+            driver.setVehicleInfo(normalizeRequired(request.getDriverVehicleInfo(), "driverVehicleInfo is required"));
+            driver.setSpareSeatCapacity(request.getDriverSpareSeatCapacity());
+            Driver savedDriver = driverRepository.save(driver);
+
+            if (hasAnyDocument(driverLicenceFile, spareSeatCapacityProofFile, vehicleRegoFile)) {
+                savedDriver.setLicenceDocumentPath(
+                        storeDriverDocument(savedDriver.getId(), "licence", driverLicenceFile)
+                );
+                savedDriver.setSpareSeatProofDocumentPath(
+                        storeDriverDocument(savedDriver.getId(), "spare-seat-proof", spareSeatCapacityProofFile)
+                );
+                savedDriver.setVehicleRegoDocumentPath(
+                        storeDriverDocument(savedDriver.getId(), "rego", vehicleRegoFile)
+                );
+                savedDriver = driverRepository.save(savedDriver);
+            }
+            savedUser = savedDriver;
         } else {
             Rider rider = new Rider();
             rider.setFullName(fullName);
@@ -175,8 +232,106 @@ public class AuthService {
         registerRequest.setFullName(fullName);
         registerRequest.setEmail(uniqueEmail);
         registerRequest.setPassword("social-" + UUID.randomUUID());
-        registerRequest.setRole(role);
+        if ("DRIVER".equalsIgnoreCase(role)) {
+            registerRequest.setRole("RIDER");
+        } else {
+            registerRequest.setRole(role);
+        }
         return register(registerRequest);
+    }
+
+    private void validateDriverRegistrationFields(
+            AuthRegisterRequestDto request,
+            boolean requireDriverDocuments,
+            MultipartFile driverLicenceFile,
+            MultipartFile spareSeatCapacityProofFile,
+            MultipartFile vehicleRegoFile
+    ) {
+        if (request.getDriverSpareSeatCapacity() == null || request.getDriverSpareSeatCapacity() < 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "driverSpareSeatCapacity must be a whole number >= 1"
+            );
+        }
+        normalizeRequired(request.getDriverVehicleInfo(), "driverVehicleInfo is required");
+
+        if (!requireDriverDocuments) {
+            return;
+        }
+
+        if (driverLicenceFile == null || driverLicenceFile.isEmpty()
+                || spareSeatCapacityProofFile == null || spareSeatCapacityProofFile.isEmpty()
+                || vehicleRegoFile == null || vehicleRegoFile.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Driver registration requires driverLicenceFile, spareSeatCapacityProofFile, and vehicleRegoFile"
+            );
+        }
+
+        validateAllowedDocument(driverLicenceFile, "driverLicenceFile");
+        validateAllowedDocument(spareSeatCapacityProofFile, "spareSeatCapacityProofFile");
+        validateAllowedDocument(vehicleRegoFile, "vehicleRegoFile");
+    }
+
+    private boolean hasAnyDocument(
+            MultipartFile driverLicenceFile,
+            MultipartFile spareSeatCapacityProofFile,
+            MultipartFile vehicleRegoFile
+    ) {
+        return (driverLicenceFile != null && !driverLicenceFile.isEmpty())
+                || (spareSeatCapacityProofFile != null && !spareSeatCapacityProofFile.isEmpty())
+                || (vehicleRegoFile != null && !vehicleRegoFile.isEmpty());
+    }
+
+    private void validateAllowedDocument(MultipartFile file, String fieldName) {
+        if (file == null || file.isEmpty()) {
+            return;
+        }
+        String name = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase(Locale.ROOT);
+        int dot = name.lastIndexOf('.');
+        String extension = dot >= 0 ? name.substring(dot + 1) : "";
+        Set<String> allowed = Set.of("pdf", "png", "jpg", "jpeg");
+        if (!allowed.contains(extension)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    fieldName + " must be a PDF or image (png/jpg/jpeg)"
+            );
+        }
+    }
+
+    private String storeDriverDocument(Long driverId, String documentKey, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, documentKey + " file is required");
+        }
+
+        validateAllowedDocument(file, documentKey);
+
+        String originalName = file.getOriginalFilename() == null ? "document" : file.getOriginalFilename();
+        String extension = "";
+        int dot = originalName.lastIndexOf('.');
+        if (dot >= 0) {
+            extension = originalName.substring(dot).toLowerCase(Locale.ROOT);
+        }
+
+        Path rootPath = Paths.get(driverDocumentsRootDir).toAbsolutePath().normalize();
+        Path driverDir = rootPath.resolve("driver-" + driverId).normalize();
+        String fileName = documentKey + "-" + System.currentTimeMillis() + extension;
+        Path targetPath = driverDir.resolve(fileName).normalize();
+
+        if (!targetPath.startsWith(rootPath)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid document target path");
+        }
+
+        try {
+            Files.createDirectories(driverDir);
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to store uploaded document");
+        }
+
+        return rootPath.relativize(targetPath).toString().replace("\\", "/");
     }
 
     private boolean matchesPassword(String rawPassword, String storedSecret) {

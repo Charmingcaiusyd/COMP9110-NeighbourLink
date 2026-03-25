@@ -12,9 +12,18 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "join_requests")
+@Table(
+        name = "join_requests",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_join_requests_rider_offer_status",
+                        columnNames = {"rider_id", "ride_offer_id", "status"}
+                )
+        }
+)
 public class JoinRequest {
 
     @Id

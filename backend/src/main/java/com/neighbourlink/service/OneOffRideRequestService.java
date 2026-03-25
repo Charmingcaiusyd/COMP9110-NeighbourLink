@@ -2,6 +2,7 @@ package com.neighbourlink.service;
 
 import com.neighbourlink.dto.OpenRideRequestItemDto;
 import com.neighbourlink.dto.DriverRideRequestOfferHistoryItemDto;
+import com.neighbourlink.dto.DriverTrustSummaryDto;
 import com.neighbourlink.dto.RiderRideRequestHistoryItemDto;
 import com.neighbourlink.dto.RideRequestCreateRequestDto;
 import com.neighbourlink.dto.RideRequestCreatedResponseDto;
@@ -9,7 +10,9 @@ import com.neighbourlink.dto.RideRequestOfferAcceptResponseDto;
 import com.neighbourlink.dto.RideRequestOfferCreateRequestDto;
 import com.neighbourlink.dto.RideRequestOfferForRiderItemDto;
 import com.neighbourlink.dto.RideRequestOfferResponseDto;
+import com.neighbourlink.entity.AccountStatus;
 import com.neighbourlink.entity.Driver;
+import com.neighbourlink.entity.Profile;
 import com.neighbourlink.entity.RideMatch;
 import com.neighbourlink.entity.RideRequest;
 import com.neighbourlink.entity.RideRequestOffer;
@@ -17,7 +20,9 @@ import com.neighbourlink.entity.RideRequestOfferStatus;
 import com.neighbourlink.entity.RideRequestStatus;
 import com.neighbourlink.entity.Rider;
 import com.neighbourlink.entity.TripStatus;
+import com.neighbourlink.entity.VerificationStatus;
 import com.neighbourlink.repository.DriverRepository;
+import com.neighbourlink.repository.RatingRepository;
 import com.neighbourlink.repository.RideMatchRepository;
 import com.neighbourlink.repository.RideRequestOfferRepository;
 import com.neighbourlink.repository.RideRequestRepository;
@@ -38,19 +43,22 @@ public class OneOffRideRequestService {
     private final DriverRepository driverRepository;
     private final RideRequestOfferRepository rideRequestOfferRepository;
     private final RideMatchRepository rideMatchRepository;
+    private final RatingRepository ratingRepository;
 
     public OneOffRideRequestService(
             RideRequestRepository rideRequestRepository,
             RiderRepository riderRepository,
             DriverRepository driverRepository,
             RideRequestOfferRepository rideRequestOfferRepository,
-            RideMatchRepository rideMatchRepository
+            RideMatchRepository rideMatchRepository,
+            RatingRepository ratingRepository
     ) {
         this.rideRequestRepository = rideRequestRepository;
         this.riderRepository = riderRepository;
         this.driverRepository = driverRepository;
         this.rideRequestOfferRepository = rideRequestOfferRepository;
         this.rideMatchRepository = rideMatchRepository;
+        this.ratingRepository = ratingRepository;
     }
 
     @Transactional
@@ -140,7 +148,8 @@ public class OneOffRideRequestService {
                         offer.getProposedSeats(),
                         offer.getMeetingPoint(),
                         offer.getStatus().name(),
-                        offer.getCreatedAt()
+                        offer.getCreatedAt(),
+                        buildDriverTrustSummary(offer.getDriver())
                 ))
                 .collect(Collectors.toList());
     }
@@ -230,6 +239,7 @@ public class OneOffRideRequestService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Driver not found"));
 
         validateRideRequestOpen(rideRequest);
+        validateDriverEligibility(driver, request.getProposedSeats());
         if (request.getProposedSeats() < rideRequest.getPassengerCount()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Proposed seats must cover passenger count");
         }
@@ -294,6 +304,7 @@ public class OneOffRideRequestService {
         rideMatch.setDriver(selectedOffer.getDriver());
         rideMatch.setRider(rideRequest.getRider());
         rideMatch.setRideRequest(rideRequest);
+        rideMatch.setAcceptedRideRequestOffer(selectedOffer);
         rideMatch.setMeetingPoint(selectedOffer.getMeetingPoint());
         rideMatch.setTripStatus(TripStatus.CONFIRMED);
         RideMatch savedMatch = rideMatchRepository.save(rideMatch);
@@ -423,6 +434,54 @@ public class OneOffRideRequestService {
         if (rideRequest.getStatus() != RideRequestStatus.OPEN) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ride request is not open");
         }
+    }
+
+    private void validateDriverEligibility(Driver driver, Integer proposedSeats) {
+        if (driver.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Driver account is not active");
+        }
+        if (driver.getLicenceVerifiedStatus() != VerificationStatus.VERIFIED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Driver licence is not verified");
+        }
+        if (driver.getSpareSeatCapacity() == null || proposedSeats == null || driver.getSpareSeatCapacity() < proposedSeats) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Driver spare seat capacity cannot satisfy proposedSeats"
+            );
+        }
+    }
+
+    private DriverTrustSummaryDto buildDriverTrustSummary(Driver driver) {
+        Profile profile = driver.getProfile();
+        Double averageRating = null;
+        Long ratingCount = 0L;
+        String bio = null;
+        String travelPreferences = null;
+        String trustNotes = null;
+
+        if (profile != null) {
+            Long profileId = profile.getId();
+            if (profileId != null) {
+                ratingCount = ratingRepository.countByProfileId(profileId);
+                Double dbAverage = ratingRepository.findAverageScoreByProfileId(profileId);
+                averageRating = dbAverage != null ? dbAverage : profile.getAverageRating();
+            } else {
+                averageRating = profile.getAverageRating();
+            }
+            bio = profile.getBio();
+            travelPreferences = profile.getTravelPreferences();
+            trustNotes = profile.getTrustNotes();
+        }
+
+        return new DriverTrustSummaryDto(
+                driver.getId(),
+                driver.getFullName(),
+                averageRating,
+                ratingCount,
+                bio,
+                travelPreferences,
+                trustNotes
+        );
     }
 
     private boolean isBlank(String value) {

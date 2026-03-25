@@ -1,5 +1,7 @@
 package com.neighbourlink.entity;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -11,6 +13,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
+import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
@@ -41,6 +44,9 @@ public abstract class User {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Profile profile;
+
+    @OneToMany(mappedBy = "raterUser")
+    private List<Rating> ratingsGiven = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -96,5 +102,13 @@ public abstract class User {
 
     public void setProfile(Profile profile) {
         this.profile = profile;
+    }
+
+    public List<Rating> getRatingsGiven() {
+        return ratingsGiven;
+    }
+
+    public void setRatingsGiven(List<Rating> ratingsGiven) {
+        this.ratingsGiven = ratingsGiven;
     }
 }

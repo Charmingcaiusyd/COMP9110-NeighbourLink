@@ -19,6 +19,14 @@ public interface RideRequestOfferRepository extends JpaRepository<RideRequestOff
 
     @Query("select ro from RideRequestOffer ro "
             + "join fetch ro.driver d "
+            + "join fetch ro.rideRequest rr "
+            + "join fetch rr.rider r "
+            + "order by ro.createdAt desc, ro.id desc")
+    List<RideRequestOffer> findAllWithRequestAndDriver();
+
+    @Query("select ro from RideRequestOffer ro "
+            + "join fetch ro.driver d "
+            + "left join fetch d.profile p "
             + "where ro.rideRequest.id = :requestId "
             + "order by ro.createdAt desc")
     List<RideRequestOffer> findByRideRequestIdWithDriver(@Param("requestId") Long requestId);

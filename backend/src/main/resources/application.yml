@@ -11,6 +11,10 @@ spring:
   sql:
     init:
       mode: always
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 30MB
 
 server:
   port: 8080
@@ -23,3 +27,5 @@ neighbourlink:
     password: admin12345
     full-name: NeighbourLink Admin
     session-key: NEIGHBOURLINK-ADMIN-SESSION-2026
+  storage:
+    driver-documents-dir: ./data/driver-documents

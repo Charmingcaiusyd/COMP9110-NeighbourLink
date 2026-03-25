@@ -2,17 +2,20 @@ package com.neighbourlink;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -250,6 +253,60 @@ class UseCaseFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("maria.rider@example.com"))
                 .andExpect(jsonPath("$.role").value("RIDER"));
+    }
+
+    @Test
+    void auth_registerDriverWithoutDocuments_shouldReturnBadRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"Driver NoDocs\",\"email\":\"driver.nodocs@example.com\",\"password\":\"demo1234\",\"role\":\"DRIVER\",\"driverVehicleInfo\":\"Toyota\",\"driverSpareSeatCapacity\":3}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Driver registration requires driverLicenceFile, spareSeatCapacityProofFile, and vehicleRegoFile"));
+    }
+
+    @Test
+    void auth_registerDriverWithDocuments_shouldSucceed() throws Exception {
+        MockMultipartFile payload = new MockMultipartFile(
+                "payload",
+                "payload.json",
+                MediaType.APPLICATION_JSON_VALUE,
+                ("{\"fullName\":\"Driver With Docs\",\"email\":\"driver.docs@example.com\",\"password\":\"demo1234\",\"role\":\"DRIVER\","
+                        + "\"driverVehicleInfo\":\"Mazda 3 - Silver\",\"driverSpareSeatCapacity\":3}")
+                        .getBytes(StandardCharsets.UTF_8)
+        );
+        MockMultipartFile licence = new MockMultipartFile(
+                "driverLicenceFile",
+                "licence.pdf",
+                MediaType.APPLICATION_PDF_VALUE,
+                "fake licence".getBytes(StandardCharsets.UTF_8)
+        );
+        MockMultipartFile seatProof = new MockMultipartFile(
+                "spareSeatCapacityProofFile",
+                "seat-proof.pdf",
+                MediaType.APPLICATION_PDF_VALUE,
+                "fake seat proof".getBytes(StandardCharsets.UTF_8)
+        );
+        MockMultipartFile rego = new MockMultipartFile(
+                "vehicleRegoFile",
+                "rego.pdf",
+                MediaType.APPLICATION_PDF_VALUE,
+                "fake rego".getBytes(StandardCharsets.UTF_8)
+        );
+
+        mockMvc.perform(multipart("/api/auth/register")
+                        .file(payload)
+                        .file(licence)
+                        .file(seatProof)
+                        .file(rego))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("driver.docs@example.com"))
+                .andExpect(jsonPath("$.role").value("DRIVER"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"driver.docs@example.com\",\"password\":\"demo1234\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("DRIVER"));
     }
 
     @Test

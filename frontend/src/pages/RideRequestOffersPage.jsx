@@ -4,6 +4,25 @@ import { acceptRideRequestOffer, getRideRequestOffersForRider } from '../api/rid
 import { useAuth } from '../auth/AuthContext.jsx';
 import SectionCard from '../components/SectionCard.jsx';
 
+function formatSubmittedAt(value) {
+  if (!value) {
+    return 'Unknown';
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
+  return parsed.toLocaleString();
+}
+
+function formatAverageRating(averageRating, ratingCount) {
+  if (averageRating == null) {
+    return 'No ratings yet';
+  }
+  const count = Number.isFinite(Number(ratingCount)) ? Number(ratingCount) : 0;
+  return `${Number(averageRating).toFixed(1)} / 5 (${count} rating${count === 1 ? '' : 's'})`;
+}
+
 function RideRequestOffersPage() {
   const { userId, role } = useAuth();
   const { rideRequestId } = useParams();
@@ -129,7 +148,14 @@ function RideRequestOffersPage() {
                 <p><strong>Proposed seats:</strong> {offer.proposedSeats}</p>
                 <p><strong>Meeting point:</strong> {offer.meetingPoint || 'Not provided'}</p>
                 <p><strong>Status:</strong> {offer.status}</p>
-                <p><strong>Submitted:</strong> {offer.createdAt}</p>
+                <p><strong>Submitted:</strong> {formatSubmittedAt(offer.createdAt)}</p>
+                <div className="trust-panel">
+                  <p><strong>Driver trust summary:</strong></p>
+                  <p><strong>Rating:</strong> {formatAverageRating(offer.driver?.averageRating, offer.driver?.ratingCount)}</p>
+                  <p><strong>Travel preferences:</strong> {offer.driver?.travelPreferences || 'Not provided'}</p>
+                  <p><strong>Trust notes:</strong> {offer.driver?.trustNotes || 'Not provided'}</p>
+                  <p><strong>Bio:</strong> {offer.driver?.bio || 'Not provided'}</p>
+                </div>
                 <div className="form-actions">
                   {offer.status === 'PENDING' ? (
                     <button

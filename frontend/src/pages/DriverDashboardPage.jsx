@@ -7,6 +7,7 @@ import {
   listOpenRideRequests,
 } from '../api/rideOffersApi.js';
 import { useAuth } from '../auth/AuthContext.jsx';
+import OneOffMeetingPointMap from '../components/OneOffMeetingPointMap.jsx';
 import SectionCard from '../components/SectionCard.jsx';
 
 function resolveRideRequestId(rideRequest) {
@@ -272,6 +273,10 @@ function DriverDashboardPage() {
           </SectionCard>
 
           <SectionCard title="Open One-Off Ride Requests">
+            <p className="status-note">
+              You can respond only when your driver profile is active, licence-verified, and seat capacity
+              covers the proposed seat count.
+            </p>
             {openRideRequests.length === 0 ? (
               <p>No open one-off ride requests right now.</p>
             ) : (
@@ -290,6 +295,18 @@ function DriverDashboardPage() {
                       <p><strong>Route:</strong> {request.origin} to {request.destination}</p>
                       <p><strong>Trip:</strong> {request.tripDate} {request.tripTime}</p>
                       <p><strong>Passenger count:</strong> {request.passengerCount}</p>
+                      <div className="one-off-meeting-section">
+                        <p>
+                          <strong>Default meeting point marker:</strong>{' '}
+                          Rider origin (you can still type a custom meeting point below).
+                        </p>
+                        <OneOffMeetingPointMap
+                          originLatitude={request.originLatitude}
+                          originLongitude={request.originLongitude}
+                          originLabel={request.origin}
+                          originAddress={request.originAddress}
+                        />
+                      </div>
                       {request.notes ? <p><strong>Notes:</strong> {request.notes}</p> : null}
                       {existingOffer ? (
                         <p>

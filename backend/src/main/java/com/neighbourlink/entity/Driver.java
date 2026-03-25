@@ -23,6 +23,18 @@ public class Driver extends User {
     @Column(name = "spare_seat_capacity")
     private Integer spareSeatCapacity;
 
+    @Column(name = "licence_document_path", length = 320)
+    private String licenceDocumentPath;
+
+    @Column(name = "spare_seat_proof_document_path", length = 320)
+    private String spareSeatProofDocumentPath;
+
+    @Column(name = "vehicle_rego_document_path", length = 320)
+    private String vehicleRegoDocumentPath;
+
+    @Column(name = "verification_notes", length = 500)
+    private String verificationNotes;
+
     @OneToMany(mappedBy = "driver")
     private List<RideOffer> rideOffers = new ArrayList<>();
 
@@ -54,6 +66,38 @@ public class Driver extends User {
 
     public void setSpareSeatCapacity(Integer spareSeatCapacity) {
         this.spareSeatCapacity = spareSeatCapacity;
+    }
+
+    public String getLicenceDocumentPath() {
+        return licenceDocumentPath;
+    }
+
+    public void setLicenceDocumentPath(String licenceDocumentPath) {
+        this.licenceDocumentPath = licenceDocumentPath;
+    }
+
+    public String getSpareSeatProofDocumentPath() {
+        return spareSeatProofDocumentPath;
+    }
+
+    public void setSpareSeatProofDocumentPath(String spareSeatProofDocumentPath) {
+        this.spareSeatProofDocumentPath = spareSeatProofDocumentPath;
+    }
+
+    public String getVehicleRegoDocumentPath() {
+        return vehicleRegoDocumentPath;
+    }
+
+    public void setVehicleRegoDocumentPath(String vehicleRegoDocumentPath) {
+        this.vehicleRegoDocumentPath = vehicleRegoDocumentPath;
+    }
+
+    public String getVerificationNotes() {
+        return verificationNotes;
+    }
+
+    public void setVerificationNotes(String verificationNotes) {
+        this.verificationNotes = verificationNotes;
     }
 
     public List<RideOffer> getRideOffers() {

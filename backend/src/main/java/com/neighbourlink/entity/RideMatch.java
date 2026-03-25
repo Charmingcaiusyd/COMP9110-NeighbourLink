@@ -11,16 +11,25 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
+import org.hibernate.annotations.Check;
 
 @Entity
 @Table(
         name = "ride_matches",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_ride_matches_ride_request_id", columnNames = {"ride_request_id"})
+                @UniqueConstraint(name = "uk_ride_matches_ride_request_id", columnNames = {"ride_request_id"}),
+                @UniqueConstraint(name = "uk_ride_matches_join_request_id", columnNames = {"accepted_join_request_id"}),
+                @UniqueConstraint(name = "uk_ride_matches_ride_request_offer_id", columnNames = {"accepted_ride_request_offer_id"})
         }
 )
+@Check(constraints = "("
+        + "(accepted_join_request_id is not null and accepted_ride_request_offer_id is null and ride_offer_id is not null and ride_request_id is null)"
+        + " or "
+        + "(accepted_join_request_id is null and accepted_ride_request_offer_id is not null and ride_offer_id is null and ride_request_id is not null)"
+        + ")")
 public class RideMatch {
 
     @Id
@@ -42,6 +51,14 @@ public class RideMatch {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ride_request_id")
     private RideRequest rideRequest;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "accepted_join_request_id")
+    private JoinRequest acceptedJoinRequest;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "accepted_ride_request_offer_id")
+    private RideRequestOffer acceptedRideRequestOffer;
 
     @Column(name = "confirmed_date_time", nullable = false)
     private LocalDateTime confirmedDateTime = LocalDateTime.now();
@@ -91,6 +108,22 @@ public class RideMatch {
 
     public void setRideRequest(RideRequest rideRequest) {
         this.rideRequest = rideRequest;
+    }
+
+    public JoinRequest getAcceptedJoinRequest() {
+        return acceptedJoinRequest;
+    }
+
+    public void setAcceptedJoinRequest(JoinRequest acceptedJoinRequest) {
+        this.acceptedJoinRequest = acceptedJoinRequest;
+    }
+
+    public RideRequestOffer getAcceptedRideRequestOffer() {
+        return acceptedRideRequestOffer;
+    }
+
+    public void setAcceptedRideRequestOffer(RideRequestOffer acceptedRideRequestOffer) {
+        this.acceptedRideRequestOffer = acceptedRideRequestOffer;
     }
 
     public LocalDateTime getConfirmedDateTime() {

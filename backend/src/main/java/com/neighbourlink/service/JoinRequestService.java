@@ -52,6 +52,17 @@ public class JoinRequestService {
         RideOffer offer = rideOfferRepository.findById(request.getRideOfferId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ride offer not found"));
 
+        if (joinRequestRepository.existsByRiderIdAndRideOfferIdAndStatus(
+                rider.getId(),
+                offer.getId(),
+                JoinRequestStatus.PENDING
+        )) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Rider already has a pending join request for this ride offer"
+            );
+        }
+
         validateOfferOpen(offer);
         validateSeats(offer.getAvailableSeats(), request.getRequestedSeats());
 
@@ -105,7 +116,8 @@ public class JoinRequestService {
         validateDriverOwnership(driverId, joinRequest);
         validatePending(joinRequest);
 
-        RideOffer offer = joinRequest.getRideOffer();
+        RideOffer offer = rideOfferRepository.findByIdForUpdate(joinRequest.getRideOffer().getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ride offer not found"));
         if (parsedDecision == Decision.REJECTED) {
             joinRequest.setStatus(JoinRequestStatus.REJECTED);
             joinRequestRepository.save(joinRequest);
@@ -132,12 +144,26 @@ public class JoinRequestService {
         rideMatch.setDriver(offer.getDriver());
         rideMatch.setRider(joinRequest.getRider());
         rideMatch.setRideOffer(offer);
+        rideMatch.setAcceptedJoinRequest(joinRequest);
         rideMatch.setTripStatus(TripStatus.CONFIRMED);
         rideMatch.setMeetingPoint(normalizedMeetingPoint);
         RideMatch savedMatch = rideMatchRepository.save(rideMatch);
 
         rideOfferRepository.save(offer);
         joinRequestRepository.save(joinRequest);
+
+        if (updatedSeats == 0) {
+            List<JoinRequest> stalePendingRequests = joinRequestRepository.findByRideOfferIdAndStatus(
+                    offer.getId(),
+                    JoinRequestStatus.PENDING
+            );
+            for (JoinRequest pending : stalePendingRequests) {
+                if (!pending.getId().equals(joinRequest.getId())) {
+                    pending.setStatus(JoinRequestStatus.REJECTED);
+                    joinRequestRepository.save(pending);
+                }
+            }
+        }
 
         return new JoinRequestDecisionResponseDto(
                 joinRequest.getId(),

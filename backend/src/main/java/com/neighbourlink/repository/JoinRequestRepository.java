@@ -32,5 +32,9 @@ public interface JoinRequestRepository extends JpaRepository<JoinRequest, Long> 
             + "order by jr.requestDateTime desc, jr.id desc")
     List<JoinRequest> findAllWithOfferAndRider();
 
+    boolean existsByRiderIdAndRideOfferIdAndStatus(Long riderId, Long rideOfferId, JoinRequestStatus status);
+
+    List<JoinRequest> findByRideOfferIdAndStatus(Long rideOfferId, JoinRequestStatus status);
+
     long countByStatus(JoinRequestStatus status);
 }

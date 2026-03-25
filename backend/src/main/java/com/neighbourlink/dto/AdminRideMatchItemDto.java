@@ -10,6 +10,8 @@ public class AdminRideMatchItemDto {
     private final String riderName;
     private final Long rideOfferId;
     private final Long rideRequestId;
+    private final Long acceptedJoinRequestId;
+    private final Long acceptedRideRequestOfferId;
     private final String meetingPoint;
     private final String tripStatus;
     private final LocalDateTime confirmedDateTime;
@@ -22,6 +24,8 @@ public class AdminRideMatchItemDto {
             String riderName,
             Long rideOfferId,
             Long rideRequestId,
+            Long acceptedJoinRequestId,
+            Long acceptedRideRequestOfferId,
             String meetingPoint,
             String tripStatus,
             LocalDateTime confirmedDateTime
@@ -33,6 +37,8 @@ public class AdminRideMatchItemDto {
         this.riderName = riderName;
         this.rideOfferId = rideOfferId;
         this.rideRequestId = rideRequestId;
+        this.acceptedJoinRequestId = acceptedJoinRequestId;
+        this.acceptedRideRequestOfferId = acceptedRideRequestOfferId;
         this.meetingPoint = meetingPoint;
         this.tripStatus = tripStatus;
         this.confirmedDateTime = confirmedDateTime;
@@ -64,6 +70,14 @@ public class AdminRideMatchItemDto {
 
     public Long getRideRequestId() {
         return rideRequestId;
+    }
+
+    public Long getAcceptedJoinRequestId() {
+        return acceptedJoinRequestId;
+    }
+
+    public Long getAcceptedRideRequestOfferId() {
+        return acceptedRideRequestOfferId;
     }
 
     public String getMeetingPoint() {

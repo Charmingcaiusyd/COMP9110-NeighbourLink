@@ -7,6 +7,8 @@ public class AuthRegisterRequestDto {
     private String role;
     private String phone;
     private String suburb;
+    private String driverVehicleInfo;
+    private Integer driverSpareSeatCapacity;
 
     public String getFullName() {
         return fullName;
@@ -54,5 +56,21 @@ public class AuthRegisterRequestDto {
 
     public void setSuburb(String suburb) {
         this.suburb = suburb;
+    }
+
+    public String getDriverVehicleInfo() {
+        return driverVehicleInfo;
+    }
+
+    public void setDriverVehicleInfo(String driverVehicleInfo) {
+        this.driverVehicleInfo = driverVehicleInfo;
+    }
+
+    public Integer getDriverSpareSeatCapacity() {
+        return driverSpareSeatCapacity;
+    }
+
+    public void setDriverSpareSeatCapacity(Integer driverSpareSeatCapacity) {
+        this.driverSpareSeatCapacity = driverSpareSeatCapacity;
     }
 }

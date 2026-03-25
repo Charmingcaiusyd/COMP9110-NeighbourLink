@@ -15,6 +15,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.Version;
 
 @Entity
 @Table(name = "ride_offers")
@@ -78,6 +79,10 @@ public class RideOffer {
 
     @Column(name = "available_seats", nullable = false)
     private Integer availableSeats;
+
+    @Version
+    @Column(nullable = false)
+    private Long version = 0L;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -239,6 +244,14 @@ public class RideOffer {
 
     public void setAvailableSeats(Integer availableSeats) {
         this.availableSeats = availableSeats;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public RideOfferStatus getStatus() {
