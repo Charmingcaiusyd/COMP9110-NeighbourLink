@@ -33,6 +33,62 @@ class UseCaseFlowIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
+    void uc2_riderJoinRequestHistory_shouldShowPendingAndRejectedStates() throws Exception {
+        MvcResult createJoinResult = mockMvc.perform(post("/api/join-requests")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"rideOfferId\":101,\"riderId\":3,\"requestedSeats\":1}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andReturn();
+
+        Long joinRequestId = extractLong(createJoinResult, "joinRequestId");
+
+        mockMvc.perform(get("/api/riders/3/join-requests"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].joinRequestId").value(joinRequestId))
+                .andExpect(jsonPath("$[0].rideOfferId").value(101))
+                .andExpect(jsonPath("$[0].driverId").value(1))
+                .andExpect(jsonPath("$[0].driverName").value("Emma Lee"))
+                .andExpect(jsonPath("$[0].status").value("PENDING"));
+
+        mockMvc.perform(patch("/api/drivers/1/join-requests/{joinRequestId}/decision", joinRequestId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"decision\":\"REJECTED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REJECTED"));
+
+        mockMvc.perform(get("/api/riders/3/join-requests"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].joinRequestId").value(joinRequestId))
+                .andExpect(jsonPath("$[0].status").value("REJECTED"));
+    }
+
+    @Test
+    void searchRideOffers_synonymMatching_shouldReturnDemoResultForClaytonToMelbourne() throws Exception {
+        mockMvc.perform(get("/api/ride-offers")
+                        .param("origin", "Clayton")
+                        .param("destination", "Melbourne")
+                        .param("departureDate", "2026-04-09")
+                        .param("passengerCount", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].offerId").value(104))
+                .andExpect(jsonPath("$[0].destination").value("Docklands"))
+                .andExpect(jsonPath("$[0].availableSeats").value(2));
+    }
+
+    @Test
+    void searchRideOffers_synonymMatching_shouldAcceptCbdKeyword() throws Exception {
+        mockMvc.perform(get("/api/ride-offers")
+                        .param("origin", "Clayton")
+                        .param("destination", "CBD")
+                        .param("departureDate", "2026-03-18")
+                        .param("passengerCount", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
     void uc2_joinRequestDecisionFlow_shouldCreateMatchAndUpdateSeats() throws Exception {
         MvcResult createJoinResult = mockMvc.perform(post("/api/join-requests")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -63,7 +63,8 @@ INSERT INTO au_location_reference (id, state, suburb, postcode, address, latitud
   (1, 'VIC', 'Clayton', '3168', 'Clayton Railway Station, VIC', -37.924100, 145.120700),
   (2, 'VIC', 'Melbourne', '3000', 'Melbourne CBD, VIC', -37.813600, 144.963100),
   (3, 'VIC', 'Box Hill', '3128', 'Box Hill Library, VIC', -37.818300, 145.125600),
-  (4, 'VIC', 'Box Hill', '3128', 'Box Hill Community Hall, VIC', -37.817900, 145.124900);
+  (4, 'VIC', 'Box Hill', '3128', 'Box Hill Community Hall, VIC', -37.817900, 145.124900),
+  (5, 'VIC', 'Docklands', '3008', 'Docklands Community Hub, VIC', -37.813900, 144.946000);
 
 INSERT INTO ride_offers (
   id, driver_id, origin, origin_address, origin_state, origin_suburb, origin_postcode, origin_latitude, origin_longitude,
@@ -73,7 +74,8 @@ INSERT INTO ride_offers (
   (101, 1, 'Clayton', 'Clayton Railway Station', 'VIC', 'Clayton', '3168', -37.924100, 145.120700, 'City Centre', 'Melbourne CBD', 'VIC', 'Melbourne', '3000', -37.813600, 144.963100, '2026-03-18 00:00:00.000', '08:30', 2, 'OPEN', 0),
   (102, 1, 'Clayton', 'Clayton Railway Station', 'VIC', 'Clayton', '3168', -37.924100, 145.120700, 'City Centre', 'Melbourne CBD', 'VIC', 'Melbourne', '3000', -37.813600, 144.963100, '2026-03-18 00:00:00.000', '09:00', 1, 'OPEN', 0),
   (103, 2, 'Box Hill', 'Box Hill Library', 'VIC', 'Box Hill', '3128', -37.818300, 145.125600, 'Community Hall', 'Box Hill Community Hall', 'VIC', 'Box Hill', '3128', -37.817900, 145.124900, '2026-03-20 00:00:00.000', '10:00', 2, 'OPEN', 0),
-  (104, 2, 'Clayton', 'Clayton Railway Station', 'VIC', 'Clayton', '3168', -37.924100, 145.120700, 'City Centre', 'Melbourne CBD', 'VIC', 'Melbourne', '3000', -37.813600, 144.963100, '2026-03-18 00:00:00.000', '08:30', 0, 'CLOSED', 0);
+  (104, 2, 'Clayton', 'Clayton Railway Station', 'VIC', 'Clayton', '3168', -37.924100, 145.120700, 'City Centre', 'Melbourne CBD', 'VIC', 'Melbourne', '3000', -37.813600, 144.963100, '2026-03-18 00:00:00.000', '08:30', 0, 'CLOSED', 0),
+  (105, 1, 'Clayton', 'Clayton Railway Station', 'VIC', 'Clayton', '3168', -37.924100, 145.120700, 'Docklands', 'Docklands Community Hub', 'VIC', 'Docklands', '3008', -37.813900, 144.946000, '2026-04-09 00:00:00.000', '08:45', 2, 'OPEN', 0);
 
 INSERT INTO ride_requests (
   id, rider_id, origin, origin_address, origin_state, origin_suburb, origin_postcode, origin_latitude, origin_longitude,

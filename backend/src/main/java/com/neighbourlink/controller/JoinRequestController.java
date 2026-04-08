@@ -5,6 +5,7 @@ import com.neighbourlink.dto.JoinRequestCreatedResponseDto;
 import com.neighbourlink.dto.JoinRequestDecisionRequestDto;
 import com.neighbourlink.dto.JoinRequestDecisionResponseDto;
 import com.neighbourlink.dto.PendingJoinRequestItemDto;
+import com.neighbourlink.dto.RiderJoinRequestHistoryItemDto;
 import com.neighbourlink.service.JoinRequestService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,11 @@ public class JoinRequestController {
     @GetMapping("/drivers/{driverId}/join-requests/pending")
     public List<PendingJoinRequestItemDto> getPendingJoinRequests(@PathVariable Long driverId) {
         return joinRequestService.getPendingByDriver(driverId);
+    }
+
+    @GetMapping("/riders/{riderId}/join-requests")
+    public List<RiderJoinRequestHistoryItemDto> getRiderJoinRequestHistory(@PathVariable Long riderId) {
+        return joinRequestService.getHistoryByRider(riderId);
     }
 
     @PatchMapping("/drivers/{driverId}/join-requests/{joinRequestId}/decision")

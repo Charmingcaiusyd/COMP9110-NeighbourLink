@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createOneOffRideRequest } from '../api/rideOffersApi.js';
 import { useAuth } from '../auth/AuthContext.jsx';
@@ -25,6 +25,15 @@ const DEFAULT_DESTINATION = {
   longitude: 145.1249,
 };
 
+function toIsoDate(daysToAdd = 0) {
+  const value = new Date();
+  value.setDate(value.getDate() + daysToAdd);
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function extractLocationText(location) {
   if (!location) {
     return '';
@@ -32,11 +41,18 @@ function extractLocationText(location) {
   return location.suburb || location.address || location.displayName || '';
 }
 
+function hasValidMapPoint(location) {
+  return Number.isFinite(location?.latitude) && Number.isFinite(location?.longitude);
+}
+
 function PostRideRequestPage() {
   const navigate = useNavigate();
+  const redirectTimerRef = useRef(null);
+  const confirmRequestedRef = useRef(false);
   const { userId, role } = useAuth();
+  const [flowStep, setFlowStep] = useState('ORIGIN');
   const [form, setForm] = useState({
-    tripDate: '2026-03-20',
+    tripDate: toIsoDate(1),
     tripTime: '10:00',
     passengerCount: '2',
     notes: 'Weekend event travel',
@@ -45,23 +61,111 @@ function PostRideRequestPage() {
   const [destinationLocation, setDestinationLocation] = useState(DEFAULT_DESTINATION);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const flowLocked = submitting || Boolean(successMessage);
+
+  const originReady = Boolean(extractLocationText(originLocation)) && hasValidMapPoint(originLocation);
+  const destinationReady = Boolean(extractLocationText(destinationLocation)) && hasValidMapPoint(destinationLocation);
+
+  useEffect(() => () => {
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+    }
+  }, []);
 
   function updateField(name, value) {
     setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function canAccessStep(step) {
+    if (step === 'ORIGIN') {
+      return true;
+    }
+    if (step === 'DESTINATION') {
+      return originReady;
+    }
+    if (step === 'TRIP') {
+      return originReady && destinationReady;
+    }
+    return false;
+  }
+
+  function jumpToStep(step) {
+    if (canAccessStep(step) && !flowLocked) {
+      setError('');
+      setFlowStep(step);
+    }
   }
 
   function validateLocation(location, label) {
     if (!location || !extractLocationText(location)) {
       return `${label} location text is required.`;
     }
-    if (!Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) {
+    if (!hasValidMapPoint(location)) {
       return `${label} location must include a map point (latitude/longitude).`;
     }
-    return null;
+    return '';
+  }
+
+  function validateTripDetails() {
+    const passengerCount = Number(form.passengerCount);
+    if (!Number.isInteger(passengerCount) || passengerCount < 1) {
+      return 'Passenger count must be a whole number of at least 1.';
+    }
+    if (!form.tripDate || !form.tripTime) {
+      return 'Please complete trip date and preferred departure time.';
+    }
+    return '';
+  }
+
+  function handleNext() {
+    if (flowLocked) {
+      return;
+    }
+    setError('');
+    if (flowStep === 'ORIGIN') {
+      const originError = validateLocation(originLocation, 'Origin');
+      if (originError) {
+        setError(originError);
+        return;
+      }
+      setFlowStep('DESTINATION');
+      return;
+    }
+    if (flowStep === 'DESTINATION') {
+      const destinationError = validateLocation(destinationLocation, 'Destination');
+      if (destinationError) {
+        setError(destinationError);
+        return;
+      }
+      setFlowStep('TRIP');
+    }
+  }
+
+  function handleBack() {
+    if (flowLocked) {
+      return;
+    }
+    setError('');
+    if (flowStep === 'TRIP') {
+      setFlowStep('DESTINATION');
+      return;
+    }
+    if (flowStep === 'DESTINATION') {
+      setFlowStep('ORIGIN');
+    }
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (flowLocked) {
+      return;
+    }
+    // Only allow submit from explicit Confirm button click.
+    if (!confirmRequestedRef.current) {
+      return;
+    }
+    confirmRequestedRef.current = false;
     setError('');
 
     if (role !== 'RIDER') {
@@ -69,27 +173,28 @@ function PostRideRequestPage() {
       return;
     }
 
-    const passengerCount = Number(form.passengerCount);
-    if (!Number.isInteger(passengerCount) || passengerCount < 1) {
-      setError('Passenger count must be a whole number of at least 1.');
-      return;
-    }
-
     const originValidationError = validateLocation(originLocation, 'Origin');
     if (originValidationError) {
+      setFlowStep('ORIGIN');
       setError(originValidationError);
       return;
     }
+
     const destinationValidationError = validateLocation(destinationLocation, 'Destination');
     if (destinationValidationError) {
+      setFlowStep('DESTINATION');
       setError(destinationValidationError);
       return;
     }
 
-    if (!form.tripDate || !form.tripTime) {
-      setError('Please complete trip date and preferred departure time.');
+    const tripValidationError = validateTripDetails();
+    if (tripValidationError) {
+      setFlowStep('TRIP');
+      setError(tripValidationError);
       return;
     }
+
+    const passengerCount = Number(form.passengerCount);
 
     setSubmitting(true);
     try {
@@ -115,108 +220,181 @@ function PostRideRequestPage() {
         notes: form.notes.trim() || null,
       });
 
-      navigate('/ride-confirmed', {
-        state: {
-          oneOffRideRequest: created,
-          oneOffInput: {
-            ...form,
-            passengerCount,
-            origin: extractLocationText(originLocation),
-            destination: extractLocationText(destinationLocation),
-            originAddress: originLocation.address,
-            destinationAddress: destinationLocation.address,
-            originLatitude: originLocation.latitude,
-            originLongitude: originLocation.longitude,
-            destinationLatitude: destinationLocation.latitude,
-            destinationLongitude: destinationLocation.longitude,
+      setSuccessMessage(`Request #${created.requestId} submitted successfully. Redirecting to My Trips in 3 seconds...`);
+      redirectTimerRef.current = setTimeout(() => {
+        navigate('/my-trips', {
+          state: {
+            focus: 'REQUEST_HISTORY',
+            createdRequestId: created.requestId,
           },
-        },
-      });
+        });
+      }, 3000);
     } catch (submitError) {
       setError(submitError.message || 'Unable to submit ride request right now.');
-    } finally {
       setSubmitting(false);
+      return;
     }
+
+    setSubmitting(false);
   }
 
   return (
     <div className="page-stack">
       <header>
         <h2>Post a Ride Request</h2>
-        <p>Need a one-off trip with exact address and map pin?</p>
+        <p>Step-by-step flow: Origin, Destination, then Trip date confirmation.</p>
       </header>
 
       <div className="two-column">
-        <SectionCard title="Request Form">
+        <SectionCard title="Request Flow">
           <form className="form-grid" onSubmit={handleSubmit}>
-            <LocationPicker
-              title="Origin (pickup)"
-              value={originLocation}
-              onChange={setOriginLocation}
-              disabled={submitting}
-              placeholder="Search origin in Australia"
-            />
-
-            <LocationPicker
-              title="Destination"
-              value={destinationLocation}
-              onChange={setDestinationLocation}
-              disabled={submitting}
-              placeholder="Search destination in Australia"
-            />
-
-            <label>
-              Trip date
-              <input
-                type="date"
-                value={form.tripDate}
-                onChange={(e) => updateField('tripDate', e.target.value)}
-                disabled={submitting}
-              />
-            </label>
-            <label>
-              Preferred departure time
-              <input
-                type="time"
-                value={form.tripTime}
-                onChange={(e) => updateField('tripTime', e.target.value)}
-                disabled={submitting}
-              />
-            </label>
-            <label>
-              Number of passengers
-              <input
-                type="number"
-                min="1"
-                value={form.passengerCount}
-                onChange={(e) => updateField('passengerCount', e.target.value)}
-                disabled={submitting}
-              />
-            </label>
-            <label>
-              Notes to drivers
-              <textarea
-                rows="3"
-                placeholder="Optional notes"
-                value={form.notes}
-                onChange={(e) => updateField('notes', e.target.value)}
-                disabled={submitting}
-              />
-            </label>
-            {error ? <p className="status-error">{error}</p> : null}
-            <div className="form-actions">
-              <button className="btn" type="submit" disabled={submitting}>
-                {submitting ? 'Submitting...' : 'Submit Request'}
+            <div className="flow-step-tabs">
+              <button
+                type="button"
+                className={`flow-step-tab ${flowStep === 'ORIGIN' ? 'is-active' : ''}`}
+                onClick={() => jumpToStep('ORIGIN')}
+                disabled={flowLocked}
+              >
+                Origin (pickup)
               </button>
-              <Link className="btn btn-secondary" to="/">Cancel</Link>
+              <button
+                type="button"
+                className={`flow-step-tab ${flowStep === 'DESTINATION' ? 'is-active' : ''}`}
+                onClick={() => jumpToStep('DESTINATION')}
+                disabled={!canAccessStep('DESTINATION') || flowLocked}
+              >
+                Destination
+              </button>
+              <button
+                type="button"
+                className={`flow-step-tab ${flowStep === 'TRIP' ? 'is-active' : ''}`}
+                onClick={() => jumpToStep('TRIP')}
+                disabled={!canAccessStep('TRIP') || flowLocked}
+              >
+                Trip Date
+              </button>
+            </div>
+
+            {flowStep === 'ORIGIN' ? (
+              <div className="flow-step-panel">
+                <LocationPicker
+                  title="Origin (pickup)"
+                  value={originLocation}
+                  onChange={setOriginLocation}
+                  disabled={flowLocked}
+                  placeholder="Search origin in Australia"
+                />
+              </div>
+            ) : null}
+
+            {flowStep === 'DESTINATION' ? (
+              <div className="flow-step-panel">
+                <p className="status-note">
+                  <strong>Current origin:</strong> {extractLocationText(originLocation)}.
+                  You can return to step 1 to edit.
+                </p>
+                <LocationPicker
+                  title="Destination"
+                  value={destinationLocation}
+                  onChange={setDestinationLocation}
+                  disabled={flowLocked}
+                  placeholder="Search destination in Australia"
+                />
+              </div>
+            ) : null}
+
+            {flowStep === 'TRIP' ? (
+              <div className="flow-step-panel">
+                <p className="status-note">
+                  <strong>Origin:</strong> {extractLocationText(originLocation)} | <strong>Destination:</strong> {extractLocationText(destinationLocation)}
+                </p>
+                <div className="flow-summary-grid">
+                  <label>
+                    Trip date
+                    <input
+                      type="date"
+                      value={form.tripDate}
+                      onChange={(event) => updateField('tripDate', event.target.value)}
+                      disabled={flowLocked}
+                    />
+                  </label>
+                  <label>
+                    Preferred departure time
+                    <input
+                      type="time"
+                      value={form.tripTime}
+                      onChange={(event) => updateField('tripTime', event.target.value)}
+                      disabled={flowLocked}
+                    />
+                  </label>
+                  <label>
+                    Number of passengers
+                    <input
+                      type="number"
+                      min="1"
+                      value={form.passengerCount}
+                      onChange={(event) => updateField('passengerCount', event.target.value)}
+                      disabled={flowLocked}
+                    />
+                  </label>
+                  <label>
+                    Notes to drivers
+                    <textarea
+                      rows="3"
+                      placeholder="Optional notes"
+                      value={form.notes}
+                      onChange={(event) => updateField('notes', event.target.value)}
+                      disabled={flowLocked}
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : null}
+
+            {error ? <p className="status-error">{error}</p> : null}
+            {successMessage ? <p className="status-success">{successMessage}</p> : null}
+            <div className="form-actions">
+              {flowStep !== 'ORIGIN' ? (
+                <button className="btn btn-secondary" type="button" onClick={handleBack} disabled={flowLocked}>
+                  Back
+                </button>
+              ) : null}
+              {flowStep !== 'TRIP' ? (
+                <button className="btn" type="button" onClick={handleNext} disabled={flowLocked}>
+                  Continue
+                </button>
+              ) : (
+                <button
+                  className="btn"
+                  type="submit"
+                  disabled={flowLocked}
+                  onClick={() => {
+                    confirmRequestedRef.current = true;
+                  }}
+                >
+                  {submitting ? 'Submitting...' : 'Confirm and Submit'}
+                </button>
+              )}
+              <Link
+                className="btn btn-secondary"
+                to="/"
+                aria-disabled={flowLocked}
+                onClick={(event) => {
+                  if (flowLocked) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                Cancel
+              </Link>
             </div>
           </form>
         </SectionCard>
 
         <SectionCard title="How It Works">
-          <p>Search Australian locations by suburb, postcode, or detailed address.</p>
-          <p>Click map to pick exact points, then confirm text address for driver clarity.</p>
-          <p>After matching, route overview can show start and end points with direction.</p>
+          <p>Step 1 sets pickup origin, step 2 sets destination, and step 3 finalizes trip details.</p>
+          <p>If any step is wrong, you can jump back to earlier tabs and update it.</p>
+          <p>After successful submit, this page keeps a success message for 3 seconds then opens My Trips.</p>
         </SectionCard>
       </div>
     </div>

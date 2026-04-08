@@ -538,6 +538,114 @@ p {
   font-weight: 600;
 }
 
+.status-success {
+  margin: 0;
+  color: #0f5f59;
+  font-weight: 700;
+}
+
+.section-subtabs {
+  display: grid;
+  gap: 8px;
+}
+
+.subtabs-label {
+  margin: 0;
+  color: #4b617d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.subtabs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subtabs-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mini-pager {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px dashed #d7e3ef;
+  padding-top: 12px;
+}
+
+.mini-pager span {
+  color: #4c637f;
+  font-size: 0.82rem;
+}
+
+.mini-pager-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-pager .btn {
+  min-height: 36px;
+  font-size: 0.8rem;
+  padding: 8px 12px;
+}
+
+.flow-step-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.flow-step-tab {
+  border: 1px solid #c7d7e7;
+  border-radius: 12px;
+  background: #fff;
+  color: #23425f;
+  min-height: 42px;
+  padding: 9px 10px;
+  text-align: center;
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.flow-step-tab:hover:not(:disabled) {
+  border-color: rgba(15, 118, 110, 0.45);
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.flow-step-tab:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.flow-step-tab.is-active {
+  border-color: rgba(15, 118, 110, 0.45);
+  background: rgba(15, 118, 110, 0.13);
+  color: #0b4f4a;
+}
+
+.flow-step-panel {
+  border: 1px solid #d4e1ee;
+  border-radius: 14px;
+  background: #fbfdff;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.flow-summary-grid {
+  display: grid;
+  gap: 12px;
+}
+
 .auth-shell {
   min-height: 100vh;
   display: grid;
@@ -1908,6 +2016,30 @@ p {
     width: 100%;
   }
 
+  .subtabs-row,
+  .subtabs-chip-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .flow-step-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-pager {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mini-pager-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mini-pager-actions .btn {
+    width: 100%;
+  }
+
   .location-search-row {
     grid-template-columns: 1fr;
   }
@@ -1977,6 +2109,12 @@ p {
     min-height: 40px;
     padding: 8px 11px;
     font-size: 0.84rem;
+  }
+
+  .flow-step-tab {
+    font-size: 0.8rem;
+    padding: 8px 9px;
+    border-radius: 10px;
   }
 
   .app-nav,

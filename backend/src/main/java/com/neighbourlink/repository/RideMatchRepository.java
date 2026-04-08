@@ -2,6 +2,7 @@ package com.neighbourlink.repository;
 
 import com.neighbourlink.entity.RideMatch;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,6 +11,8 @@ public interface RideMatchRepository extends JpaRepository<RideMatch, Long> {
     boolean existsByRideRequestId(Long rideRequestId);
 
     List<RideMatch> findByRideRequestId(Long rideRequestId);
+
+    Optional<RideMatch> findByAcceptedJoinRequestId(Long acceptedJoinRequestId);
 
     @Query("select rm from RideMatch rm "
             + "join fetch rm.driver d "

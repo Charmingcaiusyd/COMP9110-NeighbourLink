@@ -4,6 +4,7 @@ import com.neighbourlink.dto.JoinRequestCreateRequestDto;
 import com.neighbourlink.dto.JoinRequestCreatedResponseDto;
 import com.neighbourlink.dto.JoinRequestDecisionResponseDto;
 import com.neighbourlink.dto.PendingJoinRequestItemDto;
+import com.neighbourlink.dto.RiderJoinRequestHistoryItemDto;
 import com.neighbourlink.entity.JoinRequest;
 import com.neighbourlink.entity.JoinRequestStatus;
 import com.neighbourlink.entity.RideMatch;
@@ -101,6 +102,40 @@ public class JoinRequestService {
                         joinRequest.getRideOffer().getDepartureTime(),
                         joinRequest.getRideOffer().getAvailableSeats()
                 ))
+                .collect(Collectors.toList());
+    }
+
+    public List<RiderJoinRequestHistoryItemDto> getHistoryByRider(Long riderId) {
+        if (riderId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "riderId is required");
+        }
+        if (!riderRepository.existsById(riderId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Rider not found");
+        }
+
+        return joinRequestRepository.findByRiderIdWithOfferAndDriver(riderId).stream()
+                .map(joinRequest -> {
+                    RideOffer offer = joinRequest.getRideOffer();
+                    RideMatch rideMatch = rideMatchRepository.findByAcceptedJoinRequestId(joinRequest.getId()).orElse(null);
+                    return new RiderJoinRequestHistoryItemDto(
+                            joinRequest.getId(),
+                            offer.getId(),
+                            offer.getDriver().getId(),
+                            offer.getDriver().getFullName(),
+                            offer.getOrigin(),
+                            offer.getOriginAddress(),
+                            offer.getDestination(),
+                            offer.getDestinationAddress(),
+                            offer.getDepartureDate() == null ? null : offer.getDepartureDate().toString(),
+                            offer.getDepartureTime(),
+                            joinRequest.getRequestedSeats(),
+                            joinRequest.getStatus().name(),
+                            joinRequest.getRequestDateTime(),
+                            rideMatch == null ? null : rideMatch.getId(),
+                            rideMatch == null || rideMatch.getTripStatus() == null ? null : rideMatch.getTripStatus().name(),
+                            rideMatch == null ? null : rideMatch.getMeetingPoint()
+                    );
+                })
                 .collect(Collectors.toList());
     }
 

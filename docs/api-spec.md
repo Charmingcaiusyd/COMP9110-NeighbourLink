@@ -23,6 +23,7 @@ Format: JSON
   - `GET /ride-offers/{id}`
 - UC2 Request to Join a Ride Offer:
   - `POST /join-requests`
+  - `GET /riders/{riderId}/join-requests`
   - `GET /drivers/{driverId}/join-requests/pending`
   - `PATCH /drivers/{driverId}/join-requests/{joinRequestId}/decision`
 - UC3 Post One-Off Request and Accept Driver Offer:
@@ -85,6 +86,7 @@ Response `200`:
 Validation rules:
 - return only `OPEN` offers
 - if `passengers` provided, only offers with `availableSeats >= passengers`
+- `origin` / `destination` use case-insensitive contains matching and metro aliases (for example `Melbourne`, `CBD`, `City Centre`, `Docklands`) to improve demo search tolerance
 
 #### GET `/ride-offers/{id}`
 Response `200`:
@@ -155,6 +157,31 @@ Response `200`:
     "requestedSeats": 1,
     "status": "PENDING",
     "createdAt": "2026-03-17T19:45:00"
+  }
+]
+```
+
+#### GET `/riders/{riderId}/join-requests`
+Purpose: rider history for join requests (pending/rejected/accepted) in My Trips.
+
+Response `200`:
+```json
+[
+  {
+    "joinRequestId": 9001,
+    "rideOfferId": 101,
+    "driverId": 12,
+    "driverName": "Emma Lee",
+    "origin": "Clayton",
+    "destination": "City Centre",
+    "departureDate": "2026-03-18",
+    "departureTime": "08:30",
+    "requestedSeats": 1,
+    "status": "PENDING",
+    "requestDateTime": "2026-03-17T19:45:00",
+    "rideMatchId": null,
+    "rideMatchStatus": null,
+    "meetingPoint": null
   }
 ]
 ```

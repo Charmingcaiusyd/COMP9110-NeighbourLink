@@ -32,6 +32,14 @@ public interface JoinRequestRepository extends JpaRepository<JoinRequest, Long> 
             + "order by jr.requestDateTime desc, jr.id desc")
     List<JoinRequest> findAllWithOfferAndRider();
 
+    @Query("select jr from JoinRequest jr "
+            + "join fetch jr.rideOffer ro "
+            + "join fetch ro.driver d "
+            + "join fetch jr.rider r "
+            + "where r.id = :riderId "
+            + "order by jr.requestDateTime desc, jr.id desc")
+    List<JoinRequest> findByRiderIdWithOfferAndDriver(@Param("riderId") Long riderId);
+
     boolean existsByRiderIdAndRideOfferIdAndStatus(Long riderId, Long rideOfferId, JoinRequestStatus status);
 
     List<JoinRequest> findByRideOfferIdAndStatus(Long rideOfferId, JoinRequestStatus status);

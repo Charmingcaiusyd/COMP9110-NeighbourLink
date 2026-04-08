@@ -40,7 +40,8 @@ INSERT INTO credentials (id, user_id, password_plain) VALUES
 INSERT INTO ride_offers (id, driver_id, origin, destination, departure_date, departure_time, available_seats, status, version) VALUES
   (101, 1, 'Clayton', 'City Centre', '2026-03-18', '08:30', 2, 'OPEN', 0),
   (102, 1, 'Clayton', 'City Centre', '2026-03-18', '09:00', 1, 'OPEN', 0),
-  (103, 2, 'Box Hill', 'Community Hall', '2026-03-20', '10:00', 2, 'OPEN', 0);
+  (103, 2, 'Box Hill', 'Community Hall', '2026-03-20', '10:00', 2, 'OPEN', 0),
+  (104, 1, 'Clayton', 'Docklands', '2026-04-09', '08:45', 2, 'OPEN', 0);
 
 INSERT INTO ride_requests (id, rider_id, origin, destination, trip_date, trip_time, passenger_count, notes, status) VALUES
   (201, 4, 'Box Hill', 'Community Hall', '2026-03-20', '10:00', 2, 'Weekend event travel', 'OPEN');

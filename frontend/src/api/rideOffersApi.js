@@ -197,6 +197,14 @@ export async function getRiderRideRequests(riderId) {
   return response.json();
 }
 
+export async function getRiderJoinRequests(riderId) {
+  const response = await fetch(`${API_BASE_URL}/riders/${riderId}/join-requests`);
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
 export async function cancelRideRequest(riderId, rideRequestId) {
   const response = await fetch(`${API_BASE_URL}/riders/${riderId}/ride-requests/${rideRequestId}/cancel`, {
     method: 'PATCH',
