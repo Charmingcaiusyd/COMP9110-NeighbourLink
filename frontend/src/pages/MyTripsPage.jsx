@@ -70,9 +70,6 @@ function filterRequestHistory(item, statusFilter) {
 }
 
 function filterJoinRequestHistory(item, statusFilter) {
-  if (statusFilter === 'PENDING_REJECTED') {
-    return item?.status === 'PENDING' || item?.status === 'REJECTED';
-  }
   if (statusFilter === 'ALL') {
     return true;
   }
@@ -152,7 +149,7 @@ function MyTripsPage() {
   const [tripTypeFilter, setTripTypeFilter] = useState('ALL');
   const [tripPage, setTripPage] = useState(1);
   const [noTripTab, setNoTripTab] = useState('GUIDE');
-  const [joinRequestHistoryTab, setJoinRequestHistoryTab] = useState('PENDING_REJECTED');
+  const [joinRequestHistoryTab, setJoinRequestHistoryTab] = useState('PENDING');
   const [joinRequestHistoryPage, setJoinRequestHistoryPage] = useState(1);
   const [requestHistoryTab, setRequestHistoryTab] = useState('ALL');
   const [requestHistoryPage, setRequestHistoryPage] = useState(1);
@@ -688,18 +685,8 @@ function MyTripsPage() {
 
       {!loading && !error && role === 'RIDER' ? (
         <SectionCard title="My Join Request History">
-          <p className="status-note">
-            Default view focuses on pending and rejected requests to avoid duplicating confirmed trips shown above.
-          </p>
           <div className="section-subtabs">
             <div className="subtabs-chip-row">
-              <button
-                className={`story-chip ${joinRequestHistoryTab === 'PENDING_REJECTED' ? 'active' : ''}`}
-                type="button"
-                onClick={() => setJoinRequestHistoryTab('PENDING_REJECTED')}
-              >
-                Pending + Rejected
-              </button>
               <button
                 className={`story-chip ${joinRequestHistoryTab === 'PENDING' ? 'active' : ''}`}
                 type="button"

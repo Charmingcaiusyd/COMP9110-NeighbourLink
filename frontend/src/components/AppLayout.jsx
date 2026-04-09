@@ -79,6 +79,7 @@ function AppLayout() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <NavLink className={navLinkClassName} to="/intro">Intro</NavLink>
+              <NavLink className={navLinkClassName} to="/tutorial">Tutorial</NavLink>
               <NavLink end className={navLinkClassName} to="/">Find a Ride</NavLink>
               <NavLink className={navLinkClassName} to="/post-ride-request">Post a Request</NavLink>
               <NavLink className={navLinkClassName} to="/my-trips">My Trips</NavLink>

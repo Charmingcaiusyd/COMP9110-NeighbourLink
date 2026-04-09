@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 
@@ -116,6 +116,93 @@ const journeyPanels = [
   },
 ];
 
+const tutorialGuides = [
+  {
+    id: 'RIDER',
+    label: 'Rider Tutorial',
+    duration: '2-3 min walkthrough',
+    objective: 'Find the best ride, send a join request, and track status clearly in My Trips.',
+    checklist: [
+      'Set accurate suburb names for better search matching.',
+      'Confirm trip date before searching or posting.',
+    ],
+    steps: [
+      {
+        title: 'Open Find a Ride and fill the 3-step flow',
+        detail: 'Set Origin, then Destination, then Trip Date. Press Confirm to submit the search flow.',
+      },
+      {
+        title: 'Review trust before requesting seats',
+        detail: 'Open Ride Offer Details, inspect profile and rating summary, then submit Join Request.',
+      },
+      {
+        title: 'Track outcomes in My Trips',
+        detail: 'Use My Join Request History tabs (Pending, Accepted, Rejected, All) and submit review after completed trips.',
+      },
+    ],
+    actions: [
+      { label: 'Start Find a Ride', to: '/' },
+      { label: 'Post One-Off Request', to: '/post-ride-request', secondary: true },
+    ],
+  },
+  {
+    id: 'DRIVER',
+    label: 'Driver Tutorial',
+    duration: '2-4 min walkthrough',
+    objective: 'Process join requests, respond to one-off requests, and keep offers consistent.',
+    checklist: [
+      'Ensure licence verification is approved.',
+      'Keep meeting point details specific for accepted requests.',
+    ],
+    steps: [
+      {
+        title: 'Go to Driver Hub',
+        detail: 'Review pending join requests first. Accept requires meeting point; reject clears stale intent.',
+      },
+      {
+        title: 'Respond to open one-off requests',
+        detail: 'Check map location and rider context, then submit one pending offer per request.',
+      },
+      {
+        title: 'Check My Trips and offer history',
+        detail: 'Confirmed matches appear in Trip Results while offer lifecycle stays in one-off offer history.',
+      },
+    ],
+    actions: [
+      { label: 'Open Driver Hub', to: '/driver-hub' },
+      { label: 'Open My Trips', to: '/my-trips', secondary: true },
+    ],
+  },
+  {
+    id: 'ADMIN',
+    label: 'Admin Tutorial',
+    duration: '3-5 min walkthrough',
+    objective: 'Use fixed-account admin access to govern users, rides, verification, and trust records.',
+    checklist: [
+      'Sign in via dedicated admin login URL.',
+      'Use pagination and batch tools for high-volume updates.',
+    ],
+    steps: [
+      {
+        title: 'Enter admin login',
+        detail: 'Use fixed credentials at /admin/login. Registration for admin is intentionally disabled.',
+      },
+      {
+        title: 'Review verification and ride operations',
+        detail: 'Audit driver documents, join requests, ride matches, and request offers in dedicated panels.',
+      },
+      {
+        title: 'Apply controlled updates',
+        detail: 'Use inline edits and batch actions to update account status, verification states, and quality signals.',
+      },
+    ],
+    actions: [
+      { label: 'Open Admin Login', to: '/admin/login' },
+      { label: 'Open Admin Dashboard', to: '/admin', secondary: true },
+    ],
+  },
+];
+
 const architecturePanels = [
   {
     title: 'Backend Foundations',
@@ -168,16 +255,13 @@ const faqs = [
     q: 'Can reviewers quickly map this to UML and use cases?',
     a: 'Yes. The page explains the three approved use cases, domain model language, and key rules used in backend transitions.',
   },
-  {
-    q: 'Can this intro be used as final presentation material?',
-    a: 'Yes. It is intentionally content-rich and visually polished to serve as a project showcase and quick technical walkthrough.',
-  },
 ];
 
 function IntroPage() {
   const { isAuthenticated } = useAuth();
   const [activeJourney, setActiveJourney] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
+  const [tutorialGuideId, setTutorialGuideId] = useState('RIDER');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navActionsRef = useRef(null);
 
@@ -217,6 +301,10 @@ function IntroPage() {
   }, [mobileMenuOpen]);
 
   const currentJourney = journeyPanels[activeJourney];
+  const currentTutorialGuide = useMemo(
+    () => tutorialGuides.find((guide) => guide.id === tutorialGuideId) || tutorialGuides[0],
+    [tutorialGuideId],
+  );
 
   return (
     <div className="intro-shell intro-shell-rich">
@@ -250,6 +338,7 @@ function IntroPage() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <a className="intro-link" href="#overview">Overview</a>
+              <Link className="intro-link" to="/tutorial">Tutorial</Link>
               <a className="intro-link" href="#capabilities">Capabilities</a>
               <a className="intro-link" href="#use-cases">Use Cases</a>
               <a className="intro-link" href="#architecture">Architecture</a>
@@ -302,10 +391,6 @@ function IntroPage() {
                 <img className="intro-gallery-small" src={showcaseImages.team} alt="Community collaboration" />
                 <img className="intro-gallery-small" src={showcaseImages.trust} alt="Trust and safety process" />
               </div>
-              <div className="floating-note">
-                <strong>Presentation Ready</strong>
-                <small>Rich business + technical overview in one page</small>
-              </div>
               <div className="intro-stats intro-stats-rich">
                 <article className="stat-card">
                   <strong>3</strong>
@@ -341,6 +426,67 @@ function IntroPage() {
             <strong>Operational Clarity</strong>
             <p>Driver Hub and Admin Console keep state transitions explicit.</p>
           </article>
+        </section>
+
+        <section className="intro-section" id="tutorial">
+          <h2 className="intro-section-title">Quick Start Tutorial</h2>
+          <p className="intro-section-subtitle">
+            Choose your role and follow an exact path to use the system correctly from the first click.
+          </p>
+          <div className="tutorial-shell">
+            <aside className="tutorial-sidebar">
+              <p className="tutorial-label">Choose Tutorial Track</p>
+              <div className="tutorial-role-list">
+                {tutorialGuides.map((guide) => (
+                  <button
+                    key={guide.id}
+                    type="button"
+                    className={`tutorial-role-btn ${tutorialGuideId === guide.id ? 'active' : ''}`}
+                    onClick={() => setTutorialGuideId(guide.id)}
+                  >
+                    {guide.label}
+                  </button>
+                ))}
+              </div>
+              <div className="tutorial-note">
+                <strong>Before You Start</strong>
+                <ul>
+                  {currentTutorialGuide.checklist.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </aside>
+            <article className="tutorial-board">
+              <header className="tutorial-board-head">
+                <p className="tutorial-pill">{currentTutorialGuide.duration}</p>
+                <h3>{currentTutorialGuide.label}</h3>
+                <p>{currentTutorialGuide.objective}</p>
+              </header>
+              <ol className="tutorial-step-list">
+                {currentTutorialGuide.steps.map((step, idx) => (
+                  <li key={step.title} className="tutorial-step-card">
+                    <span className="tutorial-step-index">Step {idx + 1}</span>
+                    <div className="tutorial-step-content">
+                      <h4>{step.title}</h4>
+                      <p>{step.detail}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <div className="tutorial-cta">
+                {currentTutorialGuide.actions.map((action) => (
+                  <Link
+                    key={action.label}
+                    className={action.secondary ? 'btn btn-secondary' : 'btn'}
+                    to={action.to}
+                  >
+                    {action.label}
+                  </Link>
+                ))}
+              </div>
+            </article>
+          </div>
         </section>
 
         <section className="intro-section" id="capabilities">

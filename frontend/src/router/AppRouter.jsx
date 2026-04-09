@@ -17,6 +17,7 @@ import RideConfirmedPage from '../pages/RideConfirmedPage.jsx';
 import DriverDashboardPage from '../pages/DriverDashboardPage.jsx';
 import RideRequestOffersPage from '../pages/RideRequestOffersPage.jsx';
 import IntroPage from '../pages/IntroPage.jsx';
+import TutorialPage from '../pages/TutorialPage.jsx';
 
 function AppRouter() {
   const { isAuthenticated, role } = useAuth();
@@ -25,6 +26,7 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/intro" element={<IntroPage />} />
+      <Route path="/tutorial" element={<TutorialPage />} />
       <Route
         path="/login"
         element={isAuthenticated ? <Navigate to={defaultHome} replace /> : <LoginPage />}
