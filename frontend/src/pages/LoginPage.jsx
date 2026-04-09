@@ -10,6 +10,7 @@ function LoginPage() {
   const [password, setPassword] = useState('demo1234');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const sessionExpired = location.state?.reason === 'session-expired';
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -59,6 +60,7 @@ function LoginPage() {
           <Link className="btn btn-secondary" to="/intro">View Intro</Link>
         </div>
         <p className="auth-hint">Demo login: `maria.rider@example.com` / `demo1234`</p>
+        {sessionExpired ? <p className="status-error">Your previous session expired. Please sign in again.</p> : null}
         <p className="auth-hint">
           Admin login: <Link to="/admin/login">Open fixed-account admin portal</Link>
         </p>

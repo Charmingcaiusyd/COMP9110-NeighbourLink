@@ -15,6 +15,7 @@ function SearchResultsPage() {
     destination: searchParams.get('destination') || '',
     departureDate: searchParams.get('departureDate') || '',
     departureTime: searchParams.get('departureTime') || '',
+    timeFlexHours: searchParams.get('timeFlexHours') || '',
     passengerCount: searchParams.get('passengerCount') || '',
   }), [searchParams]);
 
@@ -58,6 +59,7 @@ function SearchResultsPage() {
         <p><strong>To:</strong> {filters.destination || 'Any'}</p>
         <p><strong>Date:</strong> {filters.departureDate || 'Any'}</p>
         <p><strong>Time:</strong> {filters.departureTime || 'Any'}</p>
+        <p><strong>Time tolerance:</strong> {filters.departureTime ? `±${filters.timeFlexHours || '0'}h` : 'Not applied'}</p>
         <p><strong>Passengers:</strong> {filters.passengerCount || 'Any'}</p>
       </SectionCard>
 

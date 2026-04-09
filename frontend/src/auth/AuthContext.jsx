@@ -1,5 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { login, register, socialLogin } from '../api/rideOffersApi.js';
+import {
+  getProfile,
+  login,
+  register,
+  socialLogin,
+} from '../api/rideOffersApi.js';
 
 const STORAGE_KEY = 'neighbourlink.session';
 const AuthContext = createContext(null);
@@ -21,11 +26,7 @@ function readSessionFromStorage() {
 }
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(null);
-
-  useEffect(() => {
-    setSession(readSessionFromStorage());
-  }, []);
+  const [session, setSession] = useState(() => readSessionFromStorage());
 
   function persistSession(nextSession) {
     setSession(nextSession);
@@ -35,6 +36,27 @@ export function AuthProvider({ children }) {
       localStorage.removeItem(STORAGE_KEY);
     }
   }
+
+  useEffect(() => {
+    if (!session?.userId || session.role === 'ADMIN') {
+      return undefined;
+    }
+    let cancelled = false;
+    async function validatePersistedSession() {
+      try {
+        await getProfile(session.userId);
+      } catch (error) {
+        const status = Number(error?.status);
+        if (!cancelled && (status === 401 || status === 403 || status === 404)) {
+          persistSession(null);
+        }
+      }
+    }
+    validatePersistedSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.userId, session?.role]);
 
   async function loginWithPassword(email, password) {
     const authResponse = await login({ email, password });

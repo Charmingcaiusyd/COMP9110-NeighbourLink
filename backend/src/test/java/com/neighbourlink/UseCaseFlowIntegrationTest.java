@@ -64,10 +64,10 @@ class UseCaseFlowIntegrationTest {
     }
 
     @Test
-    void searchRideOffers_synonymMatching_shouldReturnDemoResultForClaytonToMelbourne() throws Exception {
+    void searchRideOffers_strictSuburbAndDate_shouldReturnExactSuburbResult() throws Exception {
         mockMvc.perform(get("/api/ride-offers")
                         .param("origin", "Clayton")
-                        .param("destination", "Melbourne")
+                        .param("destination", "Docklands")
                         .param("departureDate", "2026-04-09")
                         .param("passengerCount", "1"))
                 .andExpect(status().isOk())
@@ -78,14 +78,51 @@ class UseCaseFlowIntegrationTest {
     }
 
     @Test
-    void searchRideOffers_synonymMatching_shouldAcceptCbdKeyword() throws Exception {
+    void searchRideOffers_strictSuburb_shouldNotUseSynonymAlias() throws Exception {
         mockMvc.perform(get("/api/ride-offers")
                         .param("origin", "Clayton")
-                        .param("destination", "CBD")
-                        .param("departureDate", "2026-03-18")
+                        .param("destination", "Melbourne")
+                        .param("departureDate", "2026-04-09")
                         .param("passengerCount", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void searchRideOffers_timeWindow_shouldRespectConfiguredFlexHours() throws Exception {
+        mockMvc.perform(get("/api/ride-offers")
+                        .param("origin", "Clayton")
+                        .param("destination", "Docklands")
+                        .param("departureDate", "2026-04-09")
+                        .param("departureTime", "09:30")
+                        .param("timeFlexHours", "1")
+                        .param("passengerCount", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].offerId").value(104));
+
+        mockMvc.perform(get("/api/ride-offers")
+                        .param("origin", "Clayton")
+                        .param("destination", "Docklands")
+                        .param("departureDate", "2026-04-09")
+                        .param("departureTime", "15:30")
+                        .param("timeFlexHours", "1")
+                        .param("passengerCount", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void searchRideOffers_timeWindowAboveSixHours_shouldReturnBadRequest() throws Exception {
+        mockMvc.perform(get("/api/ride-offers")
+                        .param("origin", "Clayton")
+                        .param("destination", "Docklands")
+                        .param("departureDate", "2026-04-09")
+                        .param("departureTime", "09:30")
+                        .param("timeFlexHours", "7")
+                        .param("passengerCount", "1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("timeFlexHours must be between 0 and 6"));
     }
 
     @Test

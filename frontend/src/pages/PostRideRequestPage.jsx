@@ -49,7 +49,7 @@ function PostRideRequestPage() {
   const navigate = useNavigate();
   const redirectTimerRef = useRef(null);
   const confirmRequestedRef = useRef(false);
-  const { userId, role } = useAuth();
+  const { userId, role, logout } = useAuth();
   const [flowStep, setFlowStep] = useState('ORIGIN');
   const [form, setForm] = useState({
     tripDate: toIsoDate(1),
@@ -230,12 +230,23 @@ function PostRideRequestPage() {
         });
       }, 3000);
     } catch (submitError) {
+      const sessionExpired = submitError?.status === 404
+        && /rider not found|user not found/i.test(submitError?.message || '');
+      if (sessionExpired) {
+        logout();
+        navigate('/login', {
+          replace: true,
+          state: {
+            reason: 'session-expired',
+            from: '/post-ride-request',
+          },
+        });
+        return;
+      }
       setError(submitError.message || 'Unable to submit ride request right now.');
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    setSubmitting(false);
   }
 
   return (

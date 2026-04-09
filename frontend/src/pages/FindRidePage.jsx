@@ -52,6 +52,7 @@ function FindRidePage() {
   const [form, setForm] = useState({
     departureDate: toIsoDate(1),
     departureTime: '',
+    timeFlexHours: '0',
     passengerCount: '1',
   });
   const [error, setError] = useState('');
@@ -106,6 +107,12 @@ function FindRidePage() {
   function validateTripFields() {
     if (!form.departureDate) {
       return 'Trip date is required.';
+    }
+    if (form.departureTime?.trim()) {
+      const timeFlexHours = Number(form.timeFlexHours);
+      if (!Number.isInteger(timeFlexHours) || timeFlexHours < 0 || timeFlexHours > 6) {
+        return 'Time flexibility must be a whole number between 0 and 6 hours.';
+      }
     }
     const passengerCount = Number(form.passengerCount);
     if (!Number.isInteger(passengerCount) || passengerCount < 1) {
@@ -190,6 +197,9 @@ function FindRidePage() {
     }
     if (form.departureTime?.trim()) {
       params.set('departureTime', form.departureTime.trim());
+      if (form.timeFlexHours?.trim()) {
+        params.set('timeFlexHours', form.timeFlexHours.trim());
+      }
     }
     if (form.passengerCount?.trim()) {
       params.set('passengerCount', form.passengerCount.trim());
@@ -278,7 +288,25 @@ function FindRidePage() {
                   <input
                     type="time"
                     value={form.departureTime}
-                    onChange={(event) => updateField('departureTime', event.target.value)}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      updateField('departureTime', value);
+                      if (!value) {
+                        updateField('timeFlexHours', '0');
+                      }
+                    }}
+                  />
+                </label>
+                <label>
+                  Time flexibility (hours, 0-6)
+                  <input
+                    type="number"
+                    min="0"
+                    max="6"
+                    step="1"
+                    value={form.timeFlexHours}
+                    onChange={(event) => updateField('timeFlexHours', event.target.value)}
+                    disabled={!form.departureTime?.trim()}
                   />
                 </label>
                 <label>

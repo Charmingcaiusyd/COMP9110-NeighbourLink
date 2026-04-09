@@ -16,12 +16,10 @@ public interface RideOfferRepository extends JpaRepository<RideOffer, Long> {
             + "join fetch ro.driver d "
             + "left join fetch d.profile p "
             + "where ro.status = :status "
-            + "and (:departureTime is null or ro.departureTime = :departureTime) "
             + "and (:passengerCount is null or ro.availableSeats >= :passengerCount) "
             + "order by ro.departureDate asc, ro.departureTime asc, ro.id asc")
     List<RideOffer> searchOpenOffers(
             @Param("status") RideOfferStatus status,
-            @Param("departureTime") String departureTime,
             @Param("passengerCount") Integer passengerCount
     );
 

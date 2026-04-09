@@ -70,6 +70,9 @@ function filterRequestHistory(item, statusFilter) {
 }
 
 function filterJoinRequestHistory(item, statusFilter) {
+  if (statusFilter === 'PENDING_REJECTED') {
+    return item?.status === 'PENDING' || item?.status === 'REJECTED';
+  }
   if (statusFilter === 'ALL') {
     return true;
   }
@@ -149,7 +152,7 @@ function MyTripsPage() {
   const [tripTypeFilter, setTripTypeFilter] = useState('ALL');
   const [tripPage, setTripPage] = useState(1);
   const [noTripTab, setNoTripTab] = useState('GUIDE');
-  const [joinRequestHistoryTab, setJoinRequestHistoryTab] = useState('ALL');
+  const [joinRequestHistoryTab, setJoinRequestHistoryTab] = useState('PENDING_REJECTED');
   const [joinRequestHistoryPage, setJoinRequestHistoryPage] = useState(1);
   const [requestHistoryTab, setRequestHistoryTab] = useState('ALL');
   const [requestHistoryPage, setRequestHistoryPage] = useState(1);
@@ -184,6 +187,16 @@ function MyTripsPage() {
   const filteredTrips = useMemo(() => (
     trips.filter((trip) => (tripFilter === 'UPCOMING' ? isUpcomingTrip(trip) : !isUpcomingTrip(trip)))
   ), [tripFilter, trips]);
+
+  const hasUpcomingTrips = useMemo(
+    () => trips.some((trip) => isUpcomingTrip(trip)),
+    [trips],
+  );
+
+  const hasHistoryTrips = useMemo(
+    () => trips.some((trip) => !isUpcomingTrip(trip)),
+    [trips],
+  );
 
   const typeFilteredTrips = useMemo(
     () => filteredTrips.filter((trip) => filterTripType(trip, tripTypeFilter)),
@@ -570,6 +583,28 @@ function MyTripsPage() {
       {!loading && !error && trips.length > 0 && typeFilteredTrips.length === 0 ? (
         <SectionCard title="No Trips In This Filter">
           <p>No trips match the selected filter and secondary tab right now.</p>
+          {tripFilter === 'UPCOMING' && hasHistoryTrips ? (
+            <div className="form-actions">
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={() => setTripFilter('HISTORY')}
+              >
+                View History Trips
+              </button>
+            </div>
+          ) : null}
+          {tripFilter === 'HISTORY' && hasUpcomingTrips ? (
+            <div className="form-actions">
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={() => setTripFilter('UPCOMING')}
+              >
+                View Upcoming Trips
+              </button>
+            </div>
+          ) : null}
         </SectionCard>
       ) : null}
 
@@ -653,14 +688,17 @@ function MyTripsPage() {
 
       {!loading && !error && role === 'RIDER' ? (
         <SectionCard title="My Join Request History">
+          <p className="status-note">
+            Default view focuses on pending and rejected requests to avoid duplicating confirmed trips shown above.
+          </p>
           <div className="section-subtabs">
             <div className="subtabs-chip-row">
               <button
-                className={`story-chip ${joinRequestHistoryTab === 'ALL' ? 'active' : ''}`}
+                className={`story-chip ${joinRequestHistoryTab === 'PENDING_REJECTED' ? 'active' : ''}`}
                 type="button"
-                onClick={() => setJoinRequestHistoryTab('ALL')}
+                onClick={() => setJoinRequestHistoryTab('PENDING_REJECTED')}
               >
-                All
+                Pending + Rejected
               </button>
               <button
                 className={`story-chip ${joinRequestHistoryTab === 'PENDING' ? 'active' : ''}`}
@@ -682,6 +720,13 @@ function MyTripsPage() {
                 onClick={() => setJoinRequestHistoryTab('REJECTED')}
               >
                 Rejected
+              </button>
+              <button
+                className={`story-chip ${joinRequestHistoryTab === 'ALL' ? 'active' : ''}`}
+                type="button"
+                onClick={() => setJoinRequestHistoryTab('ALL')}
+              >
+                All
               </button>
             </div>
           </div>

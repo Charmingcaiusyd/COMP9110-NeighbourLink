@@ -9,28 +9,17 @@ import com.neighbourlink.entity.RideOffer;
 import com.neighbourlink.entity.RideOfferStatus;
 import com.neighbourlink.repository.RatingRepository;
 import com.neighbourlink.repository.RideOfferRepository;
-import java.text.Normalizer;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class RideOfferQueryService {
-
-    private static final Map<String, Set<String>> LOCATION_SYNONYM_INDEX = buildLocationSynonymIndex();
 
     private final RideOfferRepository rideOfferRepository;
     private final RatingRepository ratingRepository;
@@ -45,40 +34,47 @@ public class RideOfferQueryService {
             String destination,
             LocalDate departureDate,
             String departureTime,
+            Integer timeFlexHours,
             Integer passengerCount
     ) {
+        String normalizedOriginSuburb = normalizeSuburb(origin);
+        String normalizedDestinationSuburb = normalizeSuburb(destination);
+        String normalizedDepartureTime = normalizeTime(departureTime);
+        Integer normalizedTimeFlexHours = validateTimeFlexHours(timeFlexHours, normalizedDepartureTime);
+
+        if (normalizedOriginSuburb == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "origin suburb is required");
+        }
+        if (normalizedDestinationSuburb == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "destination suburb is required");
+        }
+        if (departureDate == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "departureDate is required");
+        }
         if (passengerCount != null && passengerCount < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "passengerCount must be >= 1");
         }
 
-        String normalizedOrigin = normalize(origin);
-        String normalizedDestination = normalize(destination);
-
         return rideOfferRepository.searchOpenOffers(
                         RideOfferStatus.OPEN,
-                        normalizeTime(departureTime),
                         passengerCount
                 ).stream()
-                .filter(offer -> departureDate == null || departureDate.equals(offer.getDepartureDate()))
-                .filter(offer -> matchesLocation(
-                        normalizedOrigin,
-                        offer.getOrigin(),
+                .filter(offer -> departureDate.equals(offer.getDepartureDate()))
+                .filter(offer -> matchesSuburb(
+                        normalizedOriginSuburb,
                         offer.getOriginSuburb(),
-                        offer.getOriginAddress(),
-                        offer.getOriginState(),
-                        offer.getOriginPostcode()
+                        offer.getOrigin()
                 ))
-                .filter(offer -> matchesLocation(
-                        normalizedDestination,
-                        offer.getDestination(),
+                .filter(offer -> matchesSuburb(
+                        normalizedDestinationSuburb,
                         offer.getDestinationSuburb(),
-                        offer.getDestinationAddress(),
-                        offer.getDestinationState(),
-                        offer.getDestinationPostcode()
+                        offer.getDestination()
                 ))
-                .sorted(Comparator.comparing(RideOffer::getDepartureDate)
-                        .thenComparing(RideOffer::getDepartureTime)
-                        .thenComparing(RideOffer::getId))
+                .filter(offer -> matchesDepartureTime(
+                        normalizedDepartureTime,
+                        normalizedTimeFlexHours,
+                        offer.getDepartureTime()
+                ))
                 .map(offer -> new RideOfferSearchItemDto(
                         offer.getId(),
                         offer.getOrigin(),
@@ -165,7 +161,7 @@ public class RideOfferQueryService {
         );
     }
 
-    private String normalize(String value) {
+    private String normalizeOptional(String value) {
         if (value == null) {
             return null;
         }
@@ -173,8 +169,16 @@ public class RideOfferQueryService {
         return Objects.equals(trimmed, "") ? null : trimmed;
     }
 
+    private String normalizeSuburb(String value) {
+        String normalized = normalizeOptional(value);
+        if (normalized == null) {
+            return null;
+        }
+        return normalized.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
     private String normalizeTime(String value) {
-        String normalized = normalize(value);
+        String normalized = normalizeOptional(value);
         if (normalized == null) {
             return null;
         }
@@ -184,77 +188,45 @@ public class RideOfferQueryService {
         return normalized;
     }
 
-    private boolean matchesLocation(String query, String... locationFields) {
-        if (query == null) {
-            return true;
+    private Integer validateTimeFlexHours(Integer timeFlexHours, String normalizedDepartureTime) {
+        if (timeFlexHours == null) {
+            return 0;
         }
+        if (normalizedDepartureTime == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "timeFlexHours requires departureTime");
+        }
+        if (timeFlexHours < 0 || timeFlexHours > 6) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "timeFlexHours must be between 0 and 6");
+        }
+        return timeFlexHours;
+    }
 
-        String locationBlob = Stream.of(locationFields)
-                .filter(Objects::nonNull)
-                .map(RideOfferQueryService::normalizeForMatch)
-                .filter(value -> !value.isBlank())
-                .collect(Collectors.joining(" "));
-
-        if (locationBlob.isBlank()) {
+    private boolean matchesSuburb(String requestedSuburb, String offerSuburb, String fallbackName) {
+        if (requestedSuburb == null) {
             return false;
         }
-
-        Set<String> queryAliases = expandLocationAliases(query);
-        return queryAliases.stream().anyMatch(locationBlob::contains);
+        String normalizedOfferSuburb = normalizeSuburb(offerSuburb);
+        if (normalizedOfferSuburb == null) {
+            normalizedOfferSuburb = normalizeSuburb(fallbackName);
+        }
+        return requestedSuburb.equals(normalizedOfferSuburb);
     }
 
-    private Set<String> expandLocationAliases(String value) {
-        String normalized = normalizeForMatch(value);
-        if (normalized.isBlank()) {
-            return Collections.emptySet();
+    private boolean matchesDepartureTime(String requestedTime, Integer timeFlexHours, String offerTime) {
+        if (requestedTime == null) {
+            return true;
         }
-
-        Set<String> aliases = new HashSet<>();
-        aliases.add(normalized);
-
-        Set<String> direct = LOCATION_SYNONYM_INDEX.get(normalized);
-        if (direct != null) {
-            aliases.addAll(direct);
+        String normalizedOfferTime = normalizeTime(offerTime);
+        if (normalizedOfferTime == null) {
+            return false;
         }
-
-        LOCATION_SYNONYM_INDEX.forEach((key, group) -> {
-            if (normalized.contains(key)) {
-                aliases.addAll(group);
-            }
-        });
-
-        return aliases;
+        int diffMinutes = Math.abs(toMinutes(requestedTime) - toMinutes(normalizedOfferTime));
+        return diffMinutes <= (timeFlexHours * 60);
     }
 
-    private static Map<String, Set<String>> buildLocationSynonymIndex() {
-        Map<String, Set<String>> index = new HashMap<>();
-        registerSynonymGroup(index, "melbourne", "melbourne cbd", "city", "city centre", "city center", "cbd", "docklands");
-        registerSynonymGroup(index, "monash", "monash university", "monash uni", "clayton");
-        return Collections.unmodifiableMap(index);
-    }
-
-    private static void registerSynonymGroup(Map<String, Set<String>> index, String... aliases) {
-        Set<String> normalizedAliases = Arrays.stream(aliases)
-                .map(RideOfferQueryService::normalizeForMatch)
-                .filter(value -> !value.isBlank())
-                .collect(Collectors.toCollection(HashSet::new));
-
-        for (String alias : normalizedAliases) {
-            index.put(alias, normalizedAliases);
-        }
-    }
-
-    private static String normalizeForMatch(String value) {
-        if (value == null) {
-            return "";
-        }
-
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "")
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", " ")
-                .trim();
-
-        return normalized.replaceAll("\\s+", " ");
+    private int toMinutes(String hhmm) {
+        int hour = Integer.parseInt(hhmm.substring(0, 2));
+        int minute = Integer.parseInt(hhmm.substring(3, 5));
+        return (hour * 60) + minute;
     }
 }

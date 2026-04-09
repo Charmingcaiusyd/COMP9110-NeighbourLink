@@ -1,0 +1,135 @@
+[2m16:48:23[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\src\pages\AdminDashboardPage.jsx: Expected corresponding JSX closing tag for <SectionCard>. (2311:14)
+
+[0m [90m 2309 |[31m                   {renderPaginationControls([32m'matches'[31m[33m,[31m pagedRideMatches)}
+ [90m 2310 |[31m                 [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+[31m[1m>[22m[31m[90m 2311 |[31m               [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m      |[31m               [31m[1m^[22m[31m
+ [90m 2312 |[31m             [33m<[31m[33m/[31m[33mSectionCard[31m[33m>[31m
+ [90m 2313 |[31m
+ [90m 2314 |[31m             [33m<[31m[33mSectionCard[31m title[33m=[31m[32m"Ratings and Trust Records"[31m[33m>[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/gs658/OneDrive/文档/NeighbourLink/frontend/src/pages/AdminDashboardPage.jsx[39m:2311:14
+[33m  2309|                    {renderPaginationControls('matches', pagedRideMatches)}
+  2310|                  </div>
+  2311|                </div>
+     |                ^
+  2312|              </SectionCard>
+  2313|  [39m
+      at constructor (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:365:19)
+      at JSXParserMixin.raise (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4727:16)
+      at JSXParserMixin.jsxParseElementAt (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+      at C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:39
+      at JSXParserMixin.allowInAnd (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:12493:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11675:28)
+      at JSXParserMixin.parseExprAtom (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11331:23)
+      at JSXParserMixin.parseExprAtom (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+      at C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:39
+      at JSXParserMixin.allowInAnd (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:17)
+      at JSXParserMixin.parseConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10891:30)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10885:17)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+      at JSXParserMixin.parseExpressionBase (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10784:23)
+      at C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10780:39
+      at JSXParserMixin.allowInAnd (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseExpression (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10780:17)
+      at JSXParserMixin.jsxParseExpressionContainer (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4711:36)
+      at JSXParserMixin.jsxParseElementAt (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+      at C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:39
+[2m16:48:37[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\src\pages\AdminDashboardPage.jsx: Expected corresponding JSX closing tag for <SectionCard>. (2312:14)
+
+[0m [90m 2310 |[31m                   {renderPaginationControls([32m'matches'[31m[33m,[31m pagedRideMatches)}
+ [90m 2311 |[31m                 [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+[31m[1m>[22m[31m[90m 2312 |[31m               [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m      |[31m               [31m[1m^[22m[31m
+ [90m 2313 |[31m             [33m<[31m[33m/[31m[33mSectionCard[31m[33m>[31m
+ [90m 2314 |[31m
+ [90m 2315 |[31m             [33m<[31m[33mSectionCard[31m title[33m=[31m[32m"Ratings and Trust Records"[31m[33m>[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/gs658/OneDrive/文档/NeighbourLink/frontend/src/pages/AdminDashboardPage.jsx[39m:2312:14
+[33m  2310|                    {renderPaginationControls('matches', pagedRideMatches)}
+  2311|                  </div>
+  2312|                </div>
+     |                ^
+  2313|              </SectionCard>
+  2314|  [39m
+      at constructor (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:365:19)
+      at JSXParserMixin.raise (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4727:16)
+      at JSXParserMixin.jsxParseElementAt (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+      at C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:39
+      at JSXParserMixin.allowInAnd (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:12493:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11675:28)
+      at JSXParserMixin.parseExprAtom (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11331:23)
+      at JSXParserMixin.parseExprAtom (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+      at C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:39
+      at JSXParserMixin.allowInAnd (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:17)
+      at JSXParserMixin.parseConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10891:30)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10885:17)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+      at JSXParserMixin.parseExpressionBase (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10784:23)
+      at C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10780:39
+      at JSXParserMixin.allowInAnd (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseExpression (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10780:17)
+      at JSXParserMixin.jsxParseExpressionContainer (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4632:31)
+      at JSXParserMixin.jsxParseElementAt (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4711:36)
+      at JSXParserMixin.jsxParseElementAt (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4698:32)
+      at JSXParserMixin.jsxParseElement (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+      at C:\Users\gs658\OneDrive\文档\NeighbourLink\frontend\node_modules\@babel\parser\lib\index.js:10800:39
+^C^C

@@ -57,10 +57,11 @@ Format: JSON
 ### 4.1 Search Ride Offers
 #### GET `/ride-offers`
 Query params:
-- `origin` (optional)
-- `destination` (optional)
-- `departureDate` (optional, `yyyy-MM-dd`)
+- `origin` (required suburb name, exact match)
+- `destination` (required suburb name, exact match)
+- `departureDate` (required, `yyyy-MM-dd`)
 - `departureTime` (optional, `HH:mm`)
+- `timeFlexHours` (optional int, `0..6`, only used when `departureTime` is provided)
 - `passengerCount` (optional, int, min 1)
 
 Response `200`:
@@ -86,7 +87,9 @@ Response `200`:
 Validation rules:
 - return only `OPEN` offers
 - if `passengers` provided, only offers with `availableSeats >= passengers`
-- `origin` / `destination` use case-insensitive contains matching and metro aliases (for example `Melbourne`, `CBD`, `City Centre`, `Docklands`) to improve demo search tolerance
+- `origin` / `destination` are matched as exact suburb values (case-insensitive, normalized spacing)
+- `departureDate` must be the same day as offer date
+- when `departureTime` is provided, match allows `|offerTime - departureTime| <= timeFlexHours` where `timeFlexHours` max is 6
 
 #### GET `/ride-offers/{id}`
 Response `200`:

@@ -28,9 +28,10 @@ public class RideOfferQueryController {
             @RequestParam(required = false) String destination,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate departureDate,
             @RequestParam(required = false) String departureTime,
+            @RequestParam(required = false) Integer timeFlexHours,
             @RequestParam(required = false) Integer passengerCount
     ) {
-        return rideOfferQueryService.searchOffers(origin, destination, departureDate, departureTime, passengerCount);
+        return rideOfferQueryService.searchOffers(origin, destination, departureDate, departureTime, timeFlexHours, passengerCount);
     }
 
     @GetMapping("/{offerId}")
