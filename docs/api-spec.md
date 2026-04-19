@@ -21,6 +21,8 @@ Format: JSON
 - UC1 Search Available Ride Offers:
   - `GET /ride-offers`
   - `GET /ride-offers/{id}`
+  - `POST /ride-offers` (driver self-service publish)
+  - `GET /drivers/{driverId}/ride-offers` (driver own posted offers)
 - UC2 Request to Join a Ride Offer:
   - `POST /join-requests`
   - `GET /riders/{riderId}/join-requests`
@@ -43,6 +45,9 @@ Format: JSON
   - `PATCH /profiles/{userId}`
   - `GET /riders/{riderId}/trips`
   - `GET /drivers/{driverId}/trips`
+  - `GET /users/{userId}/notifications`
+  - `PATCH /users/{userId}/notifications/{notificationId}/read`
+  - `PATCH /users/{userId}/notifications/read-all`
 - Internal Admin Console (fixed account, no registration):
   - `GET /admin/overview`
   - `GET /admin/users`
@@ -114,6 +119,45 @@ Response `200`:
 }
 ```
 Response `404`: offer not found
+
+#### POST `/ride-offers`
+Purpose: driver self-service publish a ride offer (not admin).
+
+Request body:
+```json
+{
+  "driverId": 12,
+  "origin": "Clayton",
+  "originAddress": "Clayton Station",
+  "originSuburb": "Clayton",
+  "originLatitude": -37.9241,
+  "originLongitude": 145.1207,
+  "destination": "Melbourne",
+  "destinationAddress": "Melbourne CBD",
+  "destinationSuburb": "Melbourne",
+  "destinationLatitude": -37.8136,
+  "destinationLongitude": 144.9631,
+  "departureDate": "2026-04-12",
+  "departureTime": "07:45",
+  "availableSeats": 2
+}
+```
+
+Response `201`:
+```json
+{
+  "offerId": 1201,
+  "status": "OPEN"
+}
+```
+
+Rules:
+- driver must be `ACTIVE`
+- driver licence must be `VERIFIED`
+- `availableSeats` must not exceed driver `spareSeatCapacity`
+
+#### GET `/drivers/{driverId}/ride-offers`
+Purpose: list a driver's own posted ride offers.
 
 ### 4.2 Join Request Flow
 #### POST `/join-requests`
@@ -514,6 +558,38 @@ Response `200`:
     "confirmedDateTime": "2026-03-16T08:30:00"
   }
 ]
+```
+
+#### GET `/users/{userId}/notifications`
+Query params:
+- `unreadOnly` (`true|false`, default `false`)
+
+Response `200`:
+```json
+[
+  {
+    "notificationId": 9001,
+    "type": "RIDE_MATCH_CONFIRMED",
+    "title": "Ride match confirmed",
+    "message": "Your join request was accepted.",
+    "relatedRideMatchId": 7100,
+    "read": false,
+    "createdAt": "2026-04-19T20:10:00"
+  }
+]
+```
+
+#### PATCH `/users/{userId}/notifications/{notificationId}/read`
+Purpose: mark one notification as read.
+
+#### PATCH `/users/{userId}/notifications/read-all`
+Purpose: mark all notifications for the user as read.
+
+Response `200`:
+```json
+{
+  "updatedCount": 4
+}
 ```
 
 ### 4.6 Internal Admin APIs (Fixed Account)

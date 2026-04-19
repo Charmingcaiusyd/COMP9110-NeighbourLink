@@ -5,6 +5,9 @@ import {
   createRating,
   getDriverRideRequestOffers,
   getDriverTrips,
+  getUserNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
   getRiderJoinRequests,
   getRiderRideRequests,
   getRiderTrips,
@@ -145,6 +148,13 @@ function MyTripsPage() {
   const [joinRequestHistory, setJoinRequestHistory] = useState([]);
   const [requestHistory, setRequestHistory] = useState([]);
   const [driverOfferHistory, setDriverOfferHistory] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationTab, setNotificationTab] = useState('UNREAD');
+  const [notificationPage, setNotificationPage] = useState(1);
+  const [markingAllNotifications, setMarkingAllNotifications] = useState(false);
+  const [markingNotificationId, setMarkingNotificationId] = useState(null);
+  const [notificationActionError, setNotificationActionError] = useState('');
+  const [notificationActionMessage, setNotificationActionMessage] = useState('');
   const [tripFilter, setTripFilter] = useState('UPCOMING');
   const [tripTypeFilter, setTripTypeFilter] = useState('ALL');
   const [tripPage, setTripPage] = useState(1);
@@ -255,6 +265,20 @@ function MyTripsPage() {
     [filteredDriverOfferHistory, driverOfferHistoryPage],
   );
 
+  const filteredNotifications = useMemo(() => (
+    notifications.filter((item) => (notificationTab === 'UNREAD' ? !item.read : true))
+  ), [notificationTab, notifications]);
+
+  const notificationTotalPages = useMemo(
+    () => getPageCount(filteredNotifications, PAGE_SIZE),
+    [filteredNotifications],
+  );
+
+  const pagedNotifications = useMemo(
+    () => paginateItems(filteredNotifications, notificationPage, PAGE_SIZE),
+    [filteredNotifications, notificationPage],
+  );
+
   useEffect(() => {
     if (!userId) {
       return;
@@ -265,28 +289,31 @@ function MyTripsPage() {
     setError('');
 
     const loadData = role === 'DRIVER'
-      ? Promise.all([getDriverTrips(userId), getDriverRideRequestOffers(userId)])
+      ? Promise.all([getDriverTrips(userId), getDriverRideRequestOffers(userId), getUserNotifications(userId, false)])
       : Promise.all([
           getRiderTrips(userId),
           getRiderRideRequests(userId),
           getRiderJoinRequests(userId),
+          getUserNotifications(userId, false),
         ]);
 
     loadData
       .then((loaded) => {
         if (active) {
           if (role === 'DRIVER') {
-            const [tripData, offerHistoryData] = loaded;
+            const [tripData, offerHistoryData, notificationData] = loaded;
             setTrips(Array.isArray(tripData) ? tripData : []);
             setDriverOfferHistory(Array.isArray(offerHistoryData) ? offerHistoryData : []);
             setJoinRequestHistory([]);
             setRequestHistory([]);
+            setNotifications(Array.isArray(notificationData) ? notificationData : []);
           } else {
-            const [tripData, oneOffRequestHistoryData, joinRequestHistoryData] = loaded;
+            const [tripData, oneOffRequestHistoryData, joinRequestHistoryData, notificationData] = loaded;
             setTrips(Array.isArray(tripData) ? tripData : []);
             setRequestHistory(Array.isArray(oneOffRequestHistoryData) ? oneOffRequestHistoryData : []);
             setJoinRequestHistory(Array.isArray(joinRequestHistoryData) ? joinRequestHistoryData : []);
             setDriverOfferHistory([]);
+            setNotifications(Array.isArray(notificationData) ? notificationData : []);
           }
         }
       })
@@ -297,6 +324,7 @@ function MyTripsPage() {
           setJoinRequestHistory([]);
           setRequestHistory([]);
           setDriverOfferHistory([]);
+          setNotifications([]);
           setRequestActionError('');
           setRequestActionMessage('');
           setRatingState({});
@@ -330,6 +358,12 @@ function MyTripsPage() {
   }, [driverOfferHistoryTab]);
 
   useEffect(() => {
+    setNotificationPage(1);
+    setNotificationActionError('');
+    setNotificationActionMessage('');
+  }, [notificationTab]);
+
+  useEffect(() => {
     setTripPage((prev) => Math.min(prev, tripTotalPages));
   }, [tripTotalPages]);
 
@@ -344,6 +378,10 @@ function MyTripsPage() {
   useEffect(() => {
     setDriverOfferHistoryPage((prev) => Math.min(prev, driverOfferHistoryTotalPages));
   }, [driverOfferHistoryTotalPages]);
+
+  useEffect(() => {
+    setNotificationPage((prev) => Math.min(prev, notificationTotalPages));
+  }, [notificationTotalPages]);
 
   useEffect(() => {
     if (loading || error) {
@@ -384,6 +422,52 @@ function MyTripsPage() {
       setRequestActionError(cancelError.message || 'Unable to cancel this request.');
     } finally {
       setCancellingRequestId(null);
+    }
+  }
+
+  async function handleMarkNotificationRead(notificationId) {
+    if (!userId || notificationId == null) {
+      return;
+    }
+    setNotificationActionError('');
+    setNotificationActionMessage('');
+    setMarkingNotificationId(notificationId);
+    try {
+      const updated = await markNotificationRead(userId, notificationId);
+      setNotifications((prev) => prev.map((item) => (
+        item.notificationId === notificationId
+          ? {
+              ...item,
+              read: updated.read,
+            }
+          : item
+      )));
+      setNotificationActionMessage(`Notification #${notificationId} marked as read.`);
+    } catch (markError) {
+      setNotificationActionError(markError.message || 'Unable to mark notification as read.');
+    } finally {
+      setMarkingNotificationId(null);
+    }
+  }
+
+  async function handleMarkAllNotificationsRead() {
+    if (!userId) {
+      return;
+    }
+    setNotificationActionError('');
+    setNotificationActionMessage('');
+    setMarkingAllNotifications(true);
+    try {
+      const response = await markAllNotificationsRead(userId);
+      setNotifications((prev) => prev.map((item) => ({
+        ...item,
+        read: true,
+      })));
+      setNotificationActionMessage(`Marked ${response.updatedCount || 0} notification(s) as read.`);
+    } catch (markError) {
+      setNotificationActionError(markError.message || 'Unable to mark all notifications as read.');
+    } finally {
+      setMarkingAllNotifications(false);
     }
   }
 
@@ -465,6 +549,77 @@ function MyTripsPage() {
       {arrivalMessage ? (
         <p className="status-note">{arrivalMessage}</p>
       ) : null}
+
+      <SectionCard title="Trip Confirmations & Notifications">
+        <div className="section-subtabs">
+          <div className="subtabs-chip-row">
+            <button
+              className={`story-chip ${notificationTab === 'UNREAD' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setNotificationTab('UNREAD')}
+            >
+              Unread
+            </button>
+            <button
+              className={`story-chip ${notificationTab === 'ALL' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setNotificationTab('ALL')}
+            >
+              All
+            </button>
+          </div>
+          <div className="form-actions">
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={handleMarkAllNotificationsRead}
+              disabled={markingAllNotifications || notifications.length === 0}
+            >
+              {markingAllNotifications ? 'Marking...' : 'Mark All Read'}
+            </button>
+          </div>
+        </div>
+        {notificationActionError ? <p className="status-error">{notificationActionError}</p> : null}
+        {notificationActionMessage ? <p>{notificationActionMessage}</p> : null}
+        {filteredNotifications.length === 0 ? (
+          <p>No notifications in this tab.</p>
+        ) : (
+          <>
+            <div className="results-grid">
+              {pagedNotifications.map((item) => (
+                <article key={item.notificationId} className="result-card">
+                  <p><strong>Title:</strong> {item.title}</p>
+                  <p><strong>Type:</strong> {item.type}</p>
+                  <p><strong>Message:</strong> {item.message}</p>
+                  <p><strong>Created at:</strong> {item.createdAt}</p>
+                  {item.relatedRideMatchId ? (
+                    <p><strong>Related match:</strong> #{item.relatedRideMatchId}</p>
+                  ) : null}
+                  <p><strong>Status:</strong> {item.read ? 'Read' : 'Unread'}</p>
+                  {!item.read ? (
+                    <div className="form-actions">
+                      <button
+                        className="btn btn-secondary"
+                        type="button"
+                        onClick={() => handleMarkNotificationRead(item.notificationId)}
+                        disabled={markingNotificationId === item.notificationId}
+                      >
+                        {markingNotificationId === item.notificationId ? 'Updating...' : 'Mark as Read'}
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+            <Pager
+              page={notificationPage}
+              totalPages={notificationTotalPages}
+              totalItems={filteredNotifications.length}
+              onPageChange={(nextPage) => setNotificationPage(nextPage)}
+            />
+          </>
+        )}
+      </SectionCard>
 
       <SectionCard title="Trip Filter">
         <div className="section-subtabs">

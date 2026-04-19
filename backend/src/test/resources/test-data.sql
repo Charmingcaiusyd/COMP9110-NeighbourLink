@@ -1,4 +1,5 @@
 DELETE FROM ratings;
+DELETE FROM notifications;
 DELETE FROM au_location_reference;
 DELETE FROM ride_matches;
 DELETE FROM ride_request_offers;

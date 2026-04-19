@@ -167,6 +167,70 @@ class UseCaseFlowIntegrationTest {
     }
 
     @Test
+    void driver_createRideOffer_shouldSucceedAndAppearInDriverList() throws Exception {
+        MvcResult createOfferResult = mockMvc.perform(post("/api/ride-offers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"driverId\":1,\"origin\":\"Clayton\",\"originAddress\":\"Clayton Station\",\"originSuburb\":\"Clayton\","
+                                + "\"originLatitude\":-37.9241,\"originLongitude\":145.1207,"
+                                + "\"destination\":\"Melbourne\",\"destinationAddress\":\"Melbourne CBD\",\"destinationSuburb\":\"Melbourne\","
+                                + "\"destinationLatitude\":-37.8136,\"destinationLongitude\":144.9631,"
+                                + "\"departureDate\":\"2026-04-12\",\"departureTime\":\"07:45\",\"availableSeats\":2}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.offerId").isNumber())
+                .andExpect(jsonPath("$.status").value("OPEN"))
+                .andReturn();
+
+        Long createdOfferId = extractLong(createOfferResult, "offerId");
+
+        mockMvc.perform(get("/api/drivers/1/ride-offers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].offerId").value(createdOfferId))
+                .andExpect(jsonPath("$[0].origin").value("Clayton"))
+                .andExpect(jsonPath("$[0].destination").value("Melbourne"))
+                .andExpect(jsonPath("$[0].availableSeats").value(2))
+                .andExpect(jsonPath("$[0].status").value("OPEN"));
+    }
+
+    @Test
+    void uc2_acceptJoinRequest_shouldCreateNotificationsForBothSides() throws Exception {
+        MvcResult createJoinResult = mockMvc.perform(post("/api/join-requests")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"rideOfferId\":101,\"riderId\":3,\"requestedSeats\":1}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        Long joinRequestId = extractLong(createJoinResult, "joinRequestId");
+
+        mockMvc.perform(patch("/api/drivers/1/join-requests/{joinRequestId}/decision", joinRequestId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"decision\":\"ACCEPTED\",\"meetingPoint\":\"Clayton Station Gate 2\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.rideMatchId").isNumber());
+
+        MvcResult riderNotificationResult = mockMvc.perform(get("/api/users/3/notifications")
+                        .param("unreadOnly", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].type").value("RIDE_MATCH_CONFIRMED"))
+                .andExpect(jsonPath("$[0].read").value(false))
+                .andReturn();
+        Long riderNotificationId = extractLongFromArray(riderNotificationResult, 0, "notificationId");
+
+        mockMvc.perform(patch("/api/users/3/notifications/{notificationId}/read", riderNotificationId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.notificationId").value(riderNotificationId))
+                .andExpect(jsonPath("$.read").value(true));
+
+        mockMvc.perform(get("/api/users/1/notifications")
+                        .param("unreadOnly", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].type").value("RIDE_MATCH_CONFIRMED"));
+
+        mockMvc.perform(patch("/api/users/1/notifications/read-all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updatedCount").value(2));
+    }
+
+    @Test
     void uc3_oneOffFlow_shouldAcceptOnlyOneFinalOffer() throws Exception {
         MvcResult createRequestResult = mockMvc.perform(post("/api/ride-requests")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -219,6 +283,48 @@ class UseCaseFlowIntegrationTest {
         }
         assertThat(selectedStatus).isEqualTo("ACCEPTED");
         assertThat(otherStatus).isEqualTo("REJECTED");
+    }
+
+    @Test
+    void uc3_acceptOffer_shouldCreateNotificationsForRiderAndDrivers() throws Exception {
+        MvcResult createRequestResult = mockMvc.perform(post("/api/ride-requests")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"riderId\":4,\"origin\":\"Box Hill\",\"destination\":\"Community Hall\",\"tripDate\":\"2026-03-25\",\"tripTime\":\"09:30\",\"passengerCount\":1,\"notes\":\"Notification test\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        Long rideRequestId = extractLong(createRequestResult, "rideRequestId");
+
+        MvcResult offerOneResult = mockMvc.perform(post("/api/ride-requests/{rideRequestId}/offers", rideRequestId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"driverId\":1,\"proposedSeats\":1,\"meetingPoint\":\"Box Hill Library\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        Long offerOneId = extractLong(offerOneResult, "offerId");
+
+        mockMvc.perform(post("/api/ride-requests/{rideRequestId}/offers", rideRequestId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"driverId\":2,\"proposedSeats\":1,\"meetingPoint\":\"Box Hill Station\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        mockMvc.perform(patch("/api/riders/4/ride-requests/{rideRequestId}/offers/{offerId}/accept", rideRequestId, offerOneId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rideRequestStatus").value("MATCHED"));
+
+        mockMvc.perform(get("/api/users/4/notifications")
+                        .param("unreadOnly", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].type").value("RIDE_MATCH_CONFIRMED"));
+
+        mockMvc.perform(get("/api/users/1/notifications")
+                        .param("unreadOnly", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].type").value("RIDE_MATCH_CONFIRMED"));
+
+        mockMvc.perform(get("/api/users/2/notifications")
+                        .param("unreadOnly", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].type").value("RIDE_REQUEST_OFFER_REJECTED"));
     }
 
     @Test
@@ -414,5 +520,10 @@ class UseCaseFlowIntegrationTest {
     private Long extractLong(MvcResult result, String fieldName) throws Exception {
         JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
         return payload.path(fieldName).asLong();
+    }
+
+    private Long extractLongFromArray(MvcResult result, int index, String fieldName) throws Exception {
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        return payload.path(index).path(fieldName).asLong();
     }
 }

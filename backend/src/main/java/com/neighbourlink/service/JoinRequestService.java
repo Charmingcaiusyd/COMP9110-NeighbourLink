@@ -31,17 +31,20 @@ public class JoinRequestService {
     private final RideOfferRepository rideOfferRepository;
     private final RiderRepository riderRepository;
     private final RideMatchRepository rideMatchRepository;
+    private final NotificationService notificationService;
 
     public JoinRequestService(
             JoinRequestRepository joinRequestRepository,
             RideOfferRepository rideOfferRepository,
             RiderRepository riderRepository,
-            RideMatchRepository rideMatchRepository
+            RideMatchRepository rideMatchRepository,
+            NotificationService notificationService
     ) {
         this.joinRequestRepository = joinRequestRepository;
         this.rideOfferRepository = rideOfferRepository;
         this.riderRepository = riderRepository;
         this.rideMatchRepository = rideMatchRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -74,6 +77,15 @@ public class JoinRequestService {
         joinRequest.setStatus(JoinRequestStatus.PENDING);
 
         JoinRequest saved = joinRequestRepository.save(joinRequest);
+        notificationService.createNotification(
+                offer.getDriver(),
+                "JOIN_REQUEST_SUBMITTED",
+                "New join request received",
+                rider.getFullName() + " requested " + saved.getRequestedSeats()
+                        + " seat(s) for ride " + offer.getOrigin() + " -> " + offer.getDestination()
+                        + " on " + offer.getDepartureDate() + " " + offer.getDepartureTime() + ".",
+                null
+        );
         return new JoinRequestCreatedResponseDto(
                 saved.getId(),
                 offer.getId(),
@@ -156,6 +168,14 @@ public class JoinRequestService {
         if (parsedDecision == Decision.REJECTED) {
             joinRequest.setStatus(JoinRequestStatus.REJECTED);
             joinRequestRepository.save(joinRequest);
+            notificationService.createNotification(
+                    joinRequest.getRider(),
+                    "JOIN_REQUEST_REJECTED",
+                    "Join request rejected",
+                    "Your join request #" + joinRequest.getId() + " for " + offer.getOrigin() + " -> "
+                            + offer.getDestination() + " was rejected by " + offer.getDriver().getFullName() + ".",
+                    null
+            );
             return new JoinRequestDecisionResponseDto(
                     joinRequest.getId(),
                     joinRequest.getStatus().name(),
@@ -186,6 +206,22 @@ public class JoinRequestService {
 
         rideOfferRepository.save(offer);
         joinRequestRepository.save(joinRequest);
+        notificationService.createNotification(
+                joinRequest.getRider(),
+                "RIDE_MATCH_CONFIRMED",
+                "Ride match confirmed",
+                "Your join request #" + joinRequest.getId() + " was accepted by "
+                        + offer.getDriver().getFullName() + ". Meeting point: " + normalizedMeetingPoint + ".",
+                savedMatch.getId()
+        );
+        notificationService.createNotification(
+                offer.getDriver(),
+                "RIDE_MATCH_CONFIRMED",
+                "Ride match confirmed",
+                "You accepted join request #" + joinRequest.getId() + " from "
+                        + joinRequest.getRider().getFullName() + ". Meeting point: " + normalizedMeetingPoint + ".",
+                savedMatch.getId()
+        );
 
         if (updatedSeats == 0) {
             List<JoinRequest> stalePendingRequests = joinRequestRepository.findByRideOfferIdAndStatus(
@@ -196,6 +232,14 @@ public class JoinRequestService {
                 if (!pending.getId().equals(joinRequest.getId())) {
                     pending.setStatus(JoinRequestStatus.REJECTED);
                     joinRequestRepository.save(pending);
+                    notificationService.createNotification(
+                            pending.getRider(),
+                            "JOIN_REQUEST_REJECTED",
+                            "Join request rejected",
+                            "Join request #" + pending.getId() + " was auto-rejected because no seats remain on ride "
+                                    + offer.getOrigin() + " -> " + offer.getDestination() + ".",
+                            null
+                    );
                 }
             }
         }

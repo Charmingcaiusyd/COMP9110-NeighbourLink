@@ -34,6 +34,12 @@ public interface RideOfferRepository extends JpaRepository<RideOffer, Long> {
             + "order by ro.departureDate desc, ro.id desc")
     List<RideOffer> findAllWithDriverOrderByRecent();
 
+    @Query("select ro from RideOffer ro "
+            + "join fetch ro.driver d "
+            + "where d.id = :driverId "
+            + "order by ro.departureDate desc, ro.departureTime desc, ro.id desc")
+    List<RideOffer> findByDriverIdWithDriverOrderByRecent(@Param("driverId") Long driverId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select ro from RideOffer ro where ro.id = :id")
     Optional<RideOffer> findByIdForUpdate(@Param("id") Long id);

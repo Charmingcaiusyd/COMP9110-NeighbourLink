@@ -44,6 +44,7 @@ public class OneOffRideRequestService {
     private final RideRequestOfferRepository rideRequestOfferRepository;
     private final RideMatchRepository rideMatchRepository;
     private final RatingRepository ratingRepository;
+    private final NotificationService notificationService;
 
     public OneOffRideRequestService(
             RideRequestRepository rideRequestRepository,
@@ -51,7 +52,8 @@ public class OneOffRideRequestService {
             DriverRepository driverRepository,
             RideRequestOfferRepository rideRequestOfferRepository,
             RideMatchRepository rideMatchRepository,
-            RatingRepository ratingRepository
+            RatingRepository ratingRepository,
+            NotificationService notificationService
     ) {
         this.rideRequestRepository = rideRequestRepository;
         this.riderRepository = riderRepository;
@@ -59,6 +61,7 @@ public class OneOffRideRequestService {
         this.rideRequestOfferRepository = rideRequestOfferRepository;
         this.rideMatchRepository = rideMatchRepository;
         this.ratingRepository = ratingRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -259,6 +262,14 @@ public class OneOffRideRequestService {
         offer.setStatus(RideRequestOfferStatus.PENDING);
 
         RideRequestOffer saved = rideRequestOfferRepository.save(offer);
+        notificationService.createNotification(
+                rideRequest.getRider(),
+                "RIDE_REQUEST_NEW_OFFER",
+                "New driver offer received",
+                driver.getFullName() + " sent offer #" + saved.getId() + " for your one-off request #"
+                        + rideRequest.getId() + ".",
+                null
+        );
         return new RideRequestOfferResponseDto(
                 saved.getId(),
                 rideRequest.getId(),
@@ -320,11 +331,36 @@ public class OneOffRideRequestService {
             if (!offer.getId().equals(selectedOffer.getId())) {
                 offer.setStatus(RideRequestOfferStatus.REJECTED);
                 rideRequestOfferRepository.save(offer);
+                notificationService.createNotification(
+                        offer.getDriver(),
+                        "RIDE_REQUEST_OFFER_REJECTED",
+                        "One-off offer not selected",
+                        "Rider " + rideRequest.getRider().getFullName() + " selected another offer for request #"
+                                + rideRequest.getId() + ". Offer #" + offer.getId() + " is now rejected.",
+                        null
+                );
             }
         }
 
         rideRequest.setStatus(RideRequestStatus.MATCHED);
         rideRequestRepository.save(rideRequest);
+        notificationService.createNotification(
+                rideRequest.getRider(),
+                "RIDE_MATCH_CONFIRMED",
+                "One-off ride matched",
+                "You accepted offer #" + selectedOffer.getId() + " from "
+                        + selectedOffer.getDriver().getFullName() + ". Meeting point: "
+                        + selectedOffer.getMeetingPoint() + ".",
+                savedMatch.getId()
+        );
+        notificationService.createNotification(
+                selectedOffer.getDriver(),
+                "RIDE_MATCH_CONFIRMED",
+                "Your one-off offer was accepted",
+                "Rider " + rideRequest.getRider().getFullName() + " accepted your offer #"
+                        + selectedOffer.getId() + " for request #" + rideRequest.getId() + ".",
+                savedMatch.getId()
+        );
 
         return new RideRequestOfferAcceptResponseDto(
                 rideRequest.getId(),
@@ -368,6 +404,14 @@ public class OneOffRideRequestService {
         for (RideRequestOffer offer : pendingOffers) {
             offer.setStatus(RideRequestOfferStatus.REJECTED);
             rideRequestOfferRepository.save(offer);
+            notificationService.createNotification(
+                    offer.getDriver(),
+                    "RIDE_REQUEST_CANCELLED",
+                    "One-off request cancelled",
+                    "Rider " + rideRequest.getRider().getFullName() + " cancelled request #"
+                            + rideRequest.getId() + ". Your offer #" + offer.getId() + " was rejected.",
+                    null
+            );
         }
 
         return new RideRequestCreatedResponseDto(rideRequest.getId(), rideRequest.getStatus().name());

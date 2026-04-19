@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
+  createRideOffer,
   createRideRequestOffer,
   decideJoinRequest,
+  getDriverRideOffers,
   getDriverRideRequestOffers,
   getPendingJoinRequests,
   listOpenRideRequests,
 } from '../api/rideOffersApi.js';
 import { useAuth } from '../auth/AuthContext.jsx';
+import LocationPicker from '../components/LocationPicker.jsx';
 import OneOffMeetingPointMap from '../components/OneOffMeetingPointMap.jsx';
 import SectionCard from '../components/SectionCard.jsx';
 
@@ -24,6 +27,46 @@ function resolveRideRequestKey(rideRequest) {
   return `${rideRequest?.riderId || 'unknown'}-${rideRequest?.tripDate || 'date'}-${rideRequest?.tripTime || 'time'}-${rideRequest?.origin || 'origin'}`;
 }
 
+const DEFAULT_RIDE_OFFER_ORIGIN = {
+  displayName: 'Clayton Railway Station, Clayton, VIC 3168',
+  address: 'Clayton Railway Station',
+  state: 'VIC',
+  suburb: 'Clayton',
+  postcode: '3168',
+  latitude: -37.9241,
+  longitude: 145.1207,
+};
+
+const DEFAULT_RIDE_OFFER_DESTINATION = {
+  displayName: 'Melbourne CBD, Melbourne, VIC 3000',
+  address: 'Melbourne CBD',
+  state: 'VIC',
+  suburb: 'Melbourne',
+  postcode: '3000',
+  latitude: -37.8136,
+  longitude: 144.9631,
+};
+
+function toIsoDate(daysToAdd = 1) {
+  const value = new Date();
+  value.setDate(value.getDate() + daysToAdd);
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function extractLocationText(location) {
+  if (!location) {
+    return '';
+  }
+  return location.suburb || location.address || location.displayName || '';
+}
+
+function hasValidMapPoint(location) {
+  return Number.isFinite(location?.latitude) && Number.isFinite(location?.longitude);
+}
+
 function DriverDashboardPage() {
   const { userId, role } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -31,14 +74,26 @@ function DriverDashboardPage() {
   const [pendingJoinRequests, setPendingJoinRequests] = useState([]);
   const [openRideRequests, setOpenRideRequests] = useState([]);
   const [driverOfferHistory, setDriverOfferHistory] = useState([]);
+  const [driverRideOffers, setDriverRideOffers] = useState([]);
+  const [rideOfferOrigin, setRideOfferOrigin] = useState(DEFAULT_RIDE_OFFER_ORIGIN);
+  const [rideOfferDestination, setRideOfferDestination] = useState(DEFAULT_RIDE_OFFER_DESTINATION);
+  const [rideOfferForm, setRideOfferForm] = useState({
+    departureDate: toIsoDate(1),
+    departureTime: '08:30',
+    availableSeats: '2',
+  });
+  const [rideOfferSubmitting, setRideOfferSubmitting] = useState(false);
+  const [rideOfferError, setRideOfferError] = useState('');
+  const [rideOfferMessage, setRideOfferMessage] = useState('');
   const [joinActionState, setJoinActionState] = useState({});
   const [offerActionState, setOfferActionState] = useState({});
 
   async function loadDashboardData(activeGuard = { active: true }) {
-    const [pendingData, openData, offerHistoryData] = await Promise.all([
+    const [pendingData, openData, offerHistoryData, rideOfferData] = await Promise.all([
       getPendingJoinRequests(userId),
       listOpenRideRequests(),
       getDriverRideRequestOffers(userId),
+      getDriverRideOffers(userId),
     ]);
     if (!activeGuard.active) {
       return;
@@ -46,6 +101,7 @@ function DriverDashboardPage() {
     setPendingJoinRequests(Array.isArray(pendingData) ? pendingData : []);
     setOpenRideRequests(Array.isArray(openData) ? openData : []);
     setDriverOfferHistory(Array.isArray(offerHistoryData) ? offerHistoryData : []);
+    setDriverRideOffers(Array.isArray(rideOfferData) ? rideOfferData : []);
   }
 
   useEffect(() => {
@@ -205,6 +261,82 @@ function DriverDashboardPage() {
     }
   }
 
+  function updateRideOfferField(name, value) {
+    setRideOfferForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
+  async function handlePublishRideOffer(event) {
+    event.preventDefault();
+    setRideOfferError('');
+    setRideOfferMessage('');
+
+    const origin = extractLocationText(rideOfferOrigin);
+    const destination = extractLocationText(rideOfferDestination);
+    if (!origin) {
+      setRideOfferError('Origin (pickup) is required.');
+      return;
+    }
+    if (!destination) {
+      setRideOfferError('Destination is required.');
+      return;
+    }
+    if (!hasValidMapPoint(rideOfferOrigin)) {
+      setRideOfferError('Origin must include a valid map point.');
+      return;
+    }
+    if (!hasValidMapPoint(rideOfferDestination)) {
+      setRideOfferError('Destination must include a valid map point.');
+      return;
+    }
+    if (!rideOfferForm.departureDate) {
+      setRideOfferError('Departure date is required.');
+      return;
+    }
+    if (!rideOfferForm.departureTime) {
+      setRideOfferError('Departure time is required.');
+      return;
+    }
+    const seatCount = Number(rideOfferForm.availableSeats);
+    if (!Number.isInteger(seatCount) || seatCount < 1) {
+      setRideOfferError('Available seats must be a whole number of at least 1.');
+      return;
+    }
+
+    setRideOfferSubmitting(true);
+    try {
+      const created = await createRideOffer({
+        driverId: userId,
+        origin,
+        originAddress: rideOfferOrigin.address || rideOfferOrigin.displayName || null,
+        originState: rideOfferOrigin.state || null,
+        originSuburb: rideOfferOrigin.suburb || null,
+        originPostcode: rideOfferOrigin.postcode || null,
+        originLatitude: rideOfferOrigin.latitude,
+        originLongitude: rideOfferOrigin.longitude,
+        destination,
+        destinationAddress: rideOfferDestination.address || rideOfferDestination.displayName || null,
+        destinationState: rideOfferDestination.state || null,
+        destinationSuburb: rideOfferDestination.suburb || null,
+        destinationPostcode: rideOfferDestination.postcode || null,
+        destinationLatitude: rideOfferDestination.latitude,
+        destinationLongitude: rideOfferDestination.longitude,
+        departureDate: rideOfferForm.departureDate,
+        departureTime: rideOfferForm.departureTime,
+        availableSeats: seatCount,
+      });
+      const latestRideOffers = await getDriverRideOffers(userId);
+      setDriverRideOffers(Array.isArray(latestRideOffers) ? latestRideOffers : []);
+      setRideOfferMessage(`Ride offer #${created.offerId} posted successfully.`);
+    } catch (submitError) {
+      setRideOfferError(submitError.message || 'Unable to publish ride offer.');
+    } finally {
+      setRideOfferSubmitting(false);
+    }
+  }
+
   return (
     <div className="page-stack">
       <header>
@@ -217,6 +349,84 @@ function DriverDashboardPage() {
 
       {!loading && !error ? (
         <>
+          <SectionCard title="Post Ride Offer (Self-Service)">
+            <form className="form-grid" onSubmit={handlePublishRideOffer}>
+              <div className="flow-step-panel">
+                <LocationPicker
+                  title="Origin (pickup)"
+                  value={rideOfferOrigin}
+                  onChange={setRideOfferOrigin}
+                  disabled={rideOfferSubmitting}
+                  placeholder="Search origin suburb/postcode/address"
+                />
+              </div>
+              <div className="flow-step-panel">
+                <LocationPicker
+                  title="Destination"
+                  value={rideOfferDestination}
+                  onChange={setRideOfferDestination}
+                  disabled={rideOfferSubmitting}
+                  placeholder="Search destination suburb/postcode/address"
+                />
+              </div>
+              <div className="flow-summary-grid">
+                <label>
+                  Departure date
+                  <input
+                    type="date"
+                    value={rideOfferForm.departureDate}
+                    onChange={(event) => updateRideOfferField('departureDate', event.target.value)}
+                    disabled={rideOfferSubmitting}
+                  />
+                </label>
+                <label>
+                  Departure time
+                  <input
+                    type="time"
+                    value={rideOfferForm.departureTime}
+                    onChange={(event) => updateRideOfferField('departureTime', event.target.value)}
+                    disabled={rideOfferSubmitting}
+                  />
+                </label>
+                <label>
+                  Available seats
+                  <input
+                    type="number"
+                    min="1"
+                    value={rideOfferForm.availableSeats}
+                    onChange={(event) => updateRideOfferField('availableSeats', event.target.value)}
+                    disabled={rideOfferSubmitting}
+                  />
+                </label>
+              </div>
+              {rideOfferError ? <p className="status-error">{rideOfferError}</p> : null}
+              {rideOfferMessage ? <p>{rideOfferMessage}</p> : null}
+              <div className="form-actions">
+                <button className="btn" type="submit" disabled={rideOfferSubmitting}>
+                  {rideOfferSubmitting ? 'Publishing...' : 'Publish Ride Offer'}
+                </button>
+              </div>
+            </form>
+          </SectionCard>
+
+          <SectionCard title="My Posted Ride Offers">
+            {driverRideOffers.length === 0 ? (
+              <p>You have not posted any ride offers yet.</p>
+            ) : (
+              <div className="results-grid">
+                {driverRideOffers.map((offer) => (
+                  <article key={offer.offerId} className="result-card">
+                    <p><strong>Offer ID:</strong> {offer.offerId}</p>
+                    <p><strong>Route:</strong> {(offer.originAddress || offer.origin)} to {(offer.destinationAddress || offer.destination)}</p>
+                    <p><strong>Departure:</strong> {offer.departureDate} {offer.departureTime}</p>
+                    <p><strong>Available seats:</strong> {offer.availableSeats}</p>
+                    <p><strong>Status:</strong> {offer.status}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
           <SectionCard title="Pending Join Requests">
             {pendingJoinRequests.length === 0 ? (
               <p>No pending join requests for this driver.</p>

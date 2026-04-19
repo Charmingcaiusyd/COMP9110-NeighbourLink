@@ -77,6 +77,28 @@ export async function getRideOfferDetail(offerId) {
   return response.json();
 }
 
+export async function createRideOffer(requestBody) {
+  const response = await fetch(`${API_BASE_URL}/ride-offers`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function getDriverRideOffers(driverId) {
+  const response = await fetch(`${API_BASE_URL}/drivers/${driverId}/ride-offers`);
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
 export async function submitJoinRequest(requestBody) {
   const response = await fetch(`${API_BASE_URL}/join-requests`, {
     method: 'POST',
@@ -459,6 +481,36 @@ export async function getRiderTrips(riderId) {
 
 export async function getDriverTrips(driverId) {
   const response = await fetch(`${API_BASE_URL}/drivers/${driverId}/trips`);
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function getUserNotifications(userId, unreadOnly = false) {
+  const params = new URLSearchParams();
+  params.set('unreadOnly', unreadOnly ? 'true' : 'false');
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/notifications?${params.toString()}`);
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function markNotificationRead(userId, notificationId) {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/notifications/${notificationId}/read`, {
+    method: 'PATCH',
+  });
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+  return response.json();
+}
+
+export async function markAllNotificationsRead(userId) {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/notifications/read-all`, {
+    method: 'PATCH',
+  });
   if (!response.ok) {
     await throwApiError(response);
   }
