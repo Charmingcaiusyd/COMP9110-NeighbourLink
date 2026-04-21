@@ -1,176 +1,182 @@
-﻿# NeighbourLink (Assignment Demo)
+# NeighbourLink
 
-This repository contains an assignment-sized ride sharing demo with:
-- Spring Boot backend APIs
-- Native HTML/CSS/JS frontend flows (bundled with Vite)
-- API documentation in `docs/api-spec.md`
+NeighbourLink is a local-only university assignment project for community ride matching.
 
-Implemented scope:
-1. Search available ride offers (UC1)
-2. Rider requests to join a ride offer + driver decision (UC2)
-3. Rider posts one-off request + driver responds + rider accepts one offer (UC3)
-4. Account login/register (including demo social login placeholders)
-5. Profile read/update
-6. My Trips for rider/driver via `ride_matches` (with upcoming/history filter)
-7. Rider can cancel unmatched one-off ride requests
+Current implementation status:
+- Backend: Spring Boot REST API (Java 17 + SQLite)
+- Frontend: Native HTML/CSS/JavaScript single-page app (Vite)
+- Map/location UX: Leaflet + OpenStreetMap tile map, AU location search/reverse lookup
+- Core business flow: ride matching and confirmation with trust-first review
 
-## Structure
+## Implemented Use Cases
+1. Search available ride offers (`UC1`)
+2. Request to join a ride offer and driver decision (`UC2`)
+3. Post one-off ride request, receive driver offers, accept one offer (`UC3`)
+
+Additional implemented system features:
+- Fixed admin login and admin control panel (`/admin`)
+- Rider/driver trip history and notifications (`/my-trips`)
+- Profile management (`/profile`)
+- Driver document upload + admin review
+
+## Tech Stack
+- Backend: Java 17, Spring Boot, Spring Web, Spring Data JPA, Bean Validation
+- Frontend: Vite + native JS/CSS/HTML (no React runtime)
+- Database: SQLite
+- Map: Leaflet + OpenStreetMap + AU geocoding/reverse geocoding endpoints
+
+## Repository Structure
 ```text
 .
 |-- AGENTS.md
 |-- README.md
-|-- start-neighbourlink.ps1
 |-- start-neighbourlink.cmd
+|-- start-neighbourlink.ps1
 |-- docs/
 |   `-- api-spec.md
 |-- backend/
 |   |-- pom.xml
 |   |-- data/
-|   `-- src/main/
-|       |-- java/com/neighbourlink/
-|       |   |-- controller/
-|       |   |-- service/
-|       |   |-- repository/
-|       |   |-- entity/
-|       |   |-- dto/
+|   |   |-- neighbourlink.db
+|   |   `-- driver-documents/
+|   `-- src/
+|       |-- main/java/com/neighbourlink/
 |       |   |-- config/
-|       |   `-- exception/
-|       `-- resources/application.yml
+|       |   |-- controller/
+|       |   |-- dto/
+|       |   |-- entity/
+|       |   |-- exception/
+|       |   |-- repository/
+|       |   `-- service/
+|       |-- main/resources/
+|       |   |-- application.yml
+|       |   |-- schema.sql
+|       |   `-- data.sql
+|       `-- test/
 `-- frontend/
     |-- package.json
+    |-- index.html
     `-- src/
         |-- main.js
         |-- App.css
         |-- index.css
-        `-- api/
+        `-- api/rideOffersApi.js
 ```
 
-## One-Command Startup (Recommended)
-This project includes a one-command startup script that:
-- auto-locates the project root (works no matter your current terminal directory)
-- checks required tools (`java`, `mvn`, `npm`)
-- installs frontend dependencies on first run
-- starts backend + frontend
-- waits for both services to become ready
+## Prerequisites
+- Java 17+
+- Maven 3.8+
+- Node.js 18+
+- npm 9+
 
+## Quick Start (Recommended)
 From project root:
 ```powershell
 .\start-neighbourlink.cmd
 ```
 
-From any directory:
-```powershell
-& "C:\Users\gs658\OneDrive\文档\NeighbourLink\start-neighbourlink.cmd"
-```
+This script will:
+- verify `java`, `mvn`, `node`, `npm`
+- install frontend dependencies if needed
+- start backend and frontend
+- wait until both services are ready
 
-Alternative (direct PowerShell script):
-```powershell
-& "C:\Users\gs658\OneDrive\文档\NeighbourLink\start-neighbourlink.ps1"
-```
+Runtime artifacts:
+- logs: `.run/logs/`
+- PID files: `.run/backend.pid`, `.run/frontend.pid`
 
-Logs and process IDs are stored in:
-- `.run/logs/`
-- `.run/backend.pid`
-- `.run/frontend.pid`
-
-## Run Backend
-Requirements:
-- Java 17
-- Maven
-
-Commands:
+## Manual Start
+### Backend
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-Health endpoint:
-- `GET http://localhost:8080/api/health`
-
-## Run Frontend
-Requirements:
-- Node.js + npm
-
-Commands:
+### Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Dev URL (default):
-- `http://localhost:5173`
-
-## Database (SQLite) Configuration
-Yes, the database is part of this project and runs locally with SQLite.
-
-Main config file:
-- `backend/src/main/resources/application.yml`
-
-Current datasource configuration:
-- URL: `jdbc:sqlite:./data/neighbourlink.db`
-- Driver: `org.sqlite.JDBC`
-- JPA schema mode: `ddl-auto: update`
-- SQL init mode: `always`
-
-### Location Dataset Storage (Australia)
-Location metadata for map-assisted input is stored in:
-- `au_location_reference`
-
-Table purpose:
-- store Australian `state`, `suburb`, `postcode`, and detailed `address`
-- optional `latitude` / `longitude` for map pin defaults
-- supports your later manual batch import
-
-Open data/services integrated:
-- OpenStreetMap Nominatim (search + reverse geocoding, Australia-filtered)
-- OSRM public routing (trip direction overview)
-
-New backend endpoints:
-- `GET /api/locations/au/search?q=...&limit=...`
-- `GET /api/locations/au/reverse?lat=...&lng=...`
-- `GET /api/routes/overview?fromLat=...&fromLng=...&toLat=...&toLng=...`
-
-Important notes:
-- The SQLite DB file is stored in `backend/data/neighbourlink.db`.
-- The schema is created/updated automatically by JPA on startup.
-- Demo seed data is loaded from `backend/src/main/resources/data.sql`.
-- Test runs use separate test resources under `backend/src/test/resources/`.
-
-Reset local database quickly:
-1. Stop backend service.
-2. Delete `backend/data/neighbourlink.db`.
-3. Start backend again (`mvn spring-boot:run` or one-command script).
-
-## Current Frontend Routes
-- `/login` -> Login
-- `/register` -> Register
-- `/admin/login` -> Fixed admin login
-- `/admin` -> Admin control panel
-- `/` -> Find a Ride
-- `/search-results` -> Search Results
-- `/ride-offer-details/:offerId` -> Ride Offer Details
-- `/post-ride-request` -> Post Ride Request
-- `/ride-requests/:rideRequestId/offers` -> Rider reviews one-off offers
-- `/ride-confirmed` -> Ride Confirmed
-- `/driver-hub` -> Driver dashboard (join requests + one-off responses)
-- `/my-trips` -> My Trips
-- `/profile` -> Profile
+## Default URLs
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:8080`
+- Health: `http://localhost:8080/api/health`
 
 ## Demo Accounts
 - Rider: `maria.rider@example.com` / `demo1234`
 - Driver: `emma.driver@example.com` / `demo1234`
 - Admin (fixed only): `admin@neighbourlink.local` / `admin12345`
 
-Notes:
-- Passwords are stored with bcrypt for new registrations.
-- Existing demo plaintext credentials are auto-upgraded to bcrypt on successful login.
-- Admin account is fixed by backend config (`application.yml`) and cannot be created via register API.
+Admin account is configured in `backend/src/main/resources/application.yml` and is not registerable.
 
-## Backend Tests
-Run minimal UC2/UC3 integration tests:
+## Frontend Routes
+Public/auth:
+- `/intro`
+- `/tutorial`
+- `/login`
+- `/register`
+- `/admin/login`
+
+Main app:
+- `/`
+- `/search-results`
+- `/ride-offer-details/:offerId`
+- `/post-ride-request`
+- `/ride-requests/:rideRequestId/offers`
+- `/ride-confirmed`
+- `/my-trips`
+- `/profile`
+- `/driver-hub`
+- `/admin`
+
+## Key Backend API Areas
+Controllers currently include:
+- `AuthController`
+- `RideOfferQueryController`
+- `RideOfferManagementController`
+- `JoinRequestController`
+- `OneOffRideRequestController`
+- `TripController`
+- `ProfileController`
+- `RatingController`
+- `NotificationController`
+- `LocationController`
+- `RouteController`
+- `DriverDocumentController`
+- `AdminController`
+- `HealthController`
+
+Full endpoint details: `docs/api-spec.md`
+
+## Database and Storage
+Primary config (`backend/src/main/resources/application.yml`):
+- SQLite URL: `jdbc:sqlite:./data/neighbourlink.db`
+- JPA schema mode: `ddl-auto: update`
+- SQL init mode: `always`
+- Driver document directory: `./data/driver-documents`
+
+Reset local DB:
+1. Stop backend
+2. Delete `backend/data/neighbourlink.db`
+3. Start backend again
+
+## Map and Location Features
+Implemented and used by Find/Post flows:
+- AU location search: `GET /api/locations/au/search?q=...&limit=...`
+- AU reverse geocode: `GET /api/locations/au/reverse?lat=...&lng=...`
+- Route overview: `GET /api/routes/overview?fromLat=...&fromLng=...&toLat=...&toLng=...`
+
+## Build and Test
+Backend tests:
 ```bash
 cd backend
 mvn test
 ```
 
+Frontend build:
+```bash
+cd frontend
+npm run build
+```
