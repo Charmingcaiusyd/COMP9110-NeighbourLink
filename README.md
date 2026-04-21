@@ -2,7 +2,7 @@
 
 This repository contains an assignment-sized ride sharing demo with:
 - Spring Boot backend APIs
-- React + Vite frontend flows
+- Native HTML/CSS/JS frontend flows (bundled with Vite)
 - API documentation in `docs/api-spec.md`
 
 Implemented scope:
@@ -39,9 +39,10 @@ Implemented scope:
 `-- frontend/
     |-- package.json
     `-- src/
-        |-- components/
-        |-- pages/
-        `-- router/
+        |-- main.js
+        |-- App.css
+        |-- index.css
+        `-- api/
 ```
 
 ## One-Command Startup (Recommended)
