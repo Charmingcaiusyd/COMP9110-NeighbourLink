@@ -324,10 +324,10 @@ Driver "1" -- "0..*" RideRequestOffer : sends >
 
 RideMatch "*" -- "1" Driver : driver >
 RideMatch "*" -- "1" Rider : rider >
-RideOffer "1" -- "0..*" RideMatch : fromOffer >
-RideRequest "1" -- "0..1" RideMatch : fromRequest >
-JoinRequest "1" -- "0..1" RideMatch : acceptedJoinRequest >
-RideRequestOffer "1" -- "0..1" RideMatch : acceptedRideRequestOffer >
+RideOffer "0..*" -- "0..1" RideMatch : fromOffer >
+RideRequest "0..1" -- "0..1" RideMatch : fromRequest >
+JoinRequest "0..1" -- "0..1" RideMatch : acceptedJoinRequest >
+RideRequestOffer "0..1" -- "0..1" RideMatch : acceptedRideRequestOffer >
 
 Profile "1" -- "0..*" Rating : receives >
 
@@ -785,6 +785,92 @@ end note
 note right of RideMatch
 @Check XOR:
 acceptedJoinRequest vs acceptedRideRequestOffer
+end note
+@enduml
+```
+
+### 8.1 标准化 Profile（元模型风格）
+
+> 本图是对上面“实现导向剖面图”的补强版，用 metaclass + stereotype extension 的表达方式，使 UML 语义更标准。
+
+```plantuml
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+package "UML Metamodel" {
+  class Class <<metaclass>>
+  class Operation <<metaclass>>
+}
+
+package "NeighbourLink Profile" <<profile>> {
+  class RestController <<stereotype>> {
+    +base_Class: Class[1]
+  }
+  class Service <<stereotype>> {
+    +base_Class: Class[1]
+  }
+  class Repository <<stereotype>> {
+    +base_Class: Class[1]
+  }
+  class Entity <<stereotype>> {
+    +base_Class: Class[1]
+  }
+  class Transactional <<stereotype>> {
+    +base_Operation: Operation[1]
+  }
+  class Versioned <<stereotype>> {
+    +base_Class: Class[1]
+  }
+  class XorConstrained <<stereotype>> {
+    +base_Class: Class[1]
+  }
+  class PessimisticLocking <<stereotype>> {
+    +base_Operation: Operation[1]
+  }
+}
+
+RestController ..> Class : <<extension>>
+Service ..> Class : <<extension>>
+Repository ..> Class : <<extension>>
+Entity ..> Class : <<extension>>
+Versioned ..> Class : <<extension>>
+XorConstrained ..> Class : <<extension>>
+Transactional ..> Operation : <<extension>>
+PessimisticLocking ..> Operation : <<extension>>
+
+class JoinRequestController <<RestController>>
+class OneOffRideRequestController <<RestController>>
+class AdminController <<RestController>>
+
+class JoinRequestService <<Service>>
+class OneOffRideRequestService <<Service>>
+class AdminService <<Service>>
+
+class RideOfferRepository <<Repository>>
+class RideMatchRepository <<Repository>>
+
+class RideOffer <<Entity, Versioned>>
+class RideMatch <<Entity, XorConstrained>>
+class JoinRequest <<Entity>>
+
+note right of JoinRequestService
+Transactional operations:
+- submitJoinRequest()
+- decideJoinRequest()
+end note
+
+note right of OneOffRideRequestService
+Transactional operations:
+- createRideRequest()
+- driverRespondToRideRequest()
+- riderAcceptDriverOffer()
+- riderCancelRideRequest()
+end note
+
+note right of RideOfferRepository
+PessimisticLocking operation:
+- findByIdForUpdate()
 end note
 @enduml
 ```
