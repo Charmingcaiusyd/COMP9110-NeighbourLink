@@ -2,22 +2,25 @@
 
 NeighbourLink is a local-only university assignment project for community ride matching.
 
+This runnable build currently foregrounds a reduced-budget Stage 2 journey around rider-driver matching, trust checking before acceptance, seat visibility, and clear trip outcomes. Some supporting and extended surfaces are still retained in the codebase for local demonstration, but they are no longer part of the primary visible navigation.
+
 Current implementation status:
 - Backend: Spring Boot REST API (Java 17 + SQLite)
 - Frontend: Native HTML/CSS/JavaScript single-page app (Vite)
-- Map/location UX: Leaflet + OpenStreetMap tile map, AU location search/reverse lookup
-- Core business flow: ride matching and confirmation with trust-first review
+- Core visible scope: ride search, join request flow, one-off request flow, trip outcome review
+- Retained support: location lookup/map preview and lightweight status notifications
 
 ## Implemented Use Cases
 1. Search available ride offers (`UC1`)
 2. Request to join a ride offer and driver decision (`UC2`)
 3. Post one-off ride request, receive driver offers, accept one offer (`UC3`)
 
-Additional implemented system features:
-- Fixed admin login and admin control panel (`/admin`)
-- Rider/driver trip history and notifications (`/my-trips`)
-- Profile management (`/profile`)
-- Driver document upload + admin review
+Retained supporting or extended implementation surfaces:
+- Fixed admin login and admin control panel (`/admin`, direct access only)
+- Rider/driver trip history and notifications (`/my-trips`, supports outcome review)
+- Profile management (`/profile`, direct access only)
+- Driver document upload + admin review (extended implementation)
+- Tutorial page (`/tutorial`, retained as a direct-access reference page but hidden from primary navigation)
 
 ## Tech Stack
 - Backend: Java 17, Spring Boot, Spring Web, Spring Data JPA, Bean Validation
@@ -112,14 +115,9 @@ npm run dev
 Admin account is configured in `backend/src/main/resources/application.yml` and is not registerable.
 
 ## Frontend Routes
-Public/auth:
-- `/intro`
-- `/tutorial`
+Primary reduced-budget journey:
 - `/login`
 - `/register`
-- `/admin/login`
-
-Main app:
 - `/`
 - `/search-results`
 - `/ride-offer-details/:offerId`
@@ -127,18 +125,25 @@ Main app:
 - `/ride-requests/:rideRequestId/offers`
 - `/ride-confirmed`
 - `/my-trips`
-- `/profile`
 - `/driver-hub`
+
+Retained supporting or direct-access routes:
+- `/tutorial` (hidden from primary navigation)
+- `/profile`
+- `/admin/login`
 - `/admin`
 
 ## Key Backend API Areas
-Controllers currently include:
+Stage 2 reduced-budget core:
 - `AuthController`
 - `RideOfferQueryController`
 - `RideOfferManagementController`
 - `JoinRequestController`
 - `OneOffRideRequestController`
 - `TripController`
+- `HealthController`
+
+Retained supporting or extended controllers:
 - `ProfileController`
 - `RatingController`
 - `NotificationController`
@@ -146,7 +151,6 @@ Controllers currently include:
 - `RouteController`
 - `DriverDocumentController`
 - `AdminController`
-- `HealthController`
 
 Full endpoint details: `docs/api-spec.md`
 
@@ -162,8 +166,8 @@ Reset local DB:
 2. Delete `backend/data/neighbourlink.db`
 3. Start backend again
 
-## Map and Location Features
-Implemented and used by Find/Post flows:
+## Map and Location Support
+Retained as location-entry and route-preview support for the runnable application:
 - AU location search: `GET /api/locations/au/search?q=...&limit=...`
 - AU reverse geocode: `GET /api/locations/au/reverse?lat=...&lng=...`
 - Route overview: `GET /api/routes/overview?fromLat=...&fromLng=...&toLat=...&toLng=...`

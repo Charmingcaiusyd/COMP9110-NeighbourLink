@@ -1,10 +1,14 @@
-# NeighbourLink API Specification (Draft)
+# NeighbourLink API Specification
 
 ## 1. Purpose
-This document defines the minimal REST API for the assignment scope:
+This document describes the runnable NeighbourLink REST API with a reduced-budget Stage 2 emphasis.
+
+The primary assignment-aligned core remains:
 1. Search Available Ride Offers
 2. Request to Join a Ride Offer
 3. Post a One-Off Ride Request and Accept Driver Offer
+
+The runnable application also retains several supporting or extended endpoints. These remain available for local demonstration, but they are not all part of the primary reduced-budget Stage 2 navigation or prototype emphasis.
 
 Base URL (local): `/api`
 Format: JSON
@@ -18,6 +22,7 @@ Format: JSON
   - `CONFIRMED`, `COMPLETED`, `CANCELLED`
 
 ## 3. Use Case Mapping
+### 3.1 Stage 2 Reduced-Budget Core
 - UC1 Search Available Ride Offers:
   - `GET /ride-offers`
   - `GET /ride-offers/{id}`
@@ -37,18 +42,27 @@ Format: JSON
   - `PATCH /riders/{riderId}/ride-requests/{rideRequestId}/cancel`
   - `GET /drivers/{driverId}/ride-request-offers` (driver one-off offer history)
   - `GET /riders/{riderId}/ride-requests` (rider one-off request history)
-- Account/Profile/Trips:
+
+### 3.2 Retained Supporting Endpoints
+- Account access and trip review:
   - `POST /auth/login`
   - `POST /auth/register`
-  - `POST /auth/social-login`
-  - `GET /profiles/{userId}`
-  - `PATCH /profiles/{userId}`
   - `GET /riders/{riderId}/trips`
   - `GET /drivers/{driverId}/trips`
   - `GET /users/{userId}/notifications`
   - `PATCH /users/{userId}/notifications/{notificationId}/read`
   - `PATCH /users/{userId}/notifications/read-all`
-- Internal Admin Console (fixed account, no registration):
+- Location-entry and map preview support:
+  - `GET /locations/au/search`
+  - `GET /locations/au/reverse`
+  - `GET /routes/overview`
+
+### 3.3 Retained Direct-Access or Extended Endpoints
+- Direct-access account/profile surfaces:
+  - `GET /profiles/{userId}`
+  - `PATCH /profiles/{userId}`
+  - `POST /auth/social-login`
+- Internal admin console (fixed account, no registration):
   - `GET /admin/overview`
   - `GET /admin/users`
   - `PATCH /admin/users/{userId}`
@@ -441,7 +455,9 @@ Response `200`:
 ]
 ```
 
-### 4.4 Account, Profile, and Trips
+### 4.4 Supporting Account, Trip, and Direct-Access APIs
+These endpoints support sign-in, trip review, and a small number of retained direct-access account surfaces. They remain useful in the runnable application, but only login/register and trip review sit close to the reduced-budget core journey.
+
 #### POST `/auth/login`
 Request body:
 ```json
@@ -494,7 +510,7 @@ Request body:
 Response `201`: same shape as login response.
 
 #### POST `/auth/social-login`
-Purpose: demo placeholder for Google/Apple login.
+Purpose: retained demo placeholder for Google/Apple login. Not part of the primary reduced-budget Stage 2 flow.
 
 Request body:
 ```json
@@ -507,6 +523,8 @@ Request body:
 Response `200`: same shape as login response.
 
 #### GET `/profiles/{userId}`
+Purpose: retained direct-access profile surface; hidden from the primary Stage 2 navigation.
+
 Response `200`:
 ```json
 {
@@ -524,6 +542,8 @@ Response `200`:
 ```
 
 #### PATCH `/profiles/{userId}`
+Purpose: retained direct-access profile edit surface; hidden from the primary Stage 2 navigation.
+
 Request body:
 ```json
 {
@@ -592,7 +612,9 @@ Response `200`:
 }
 ```
 
-### 4.6 Internal Admin APIs (Fixed Account)
+### 4.5 Internal Admin APIs (Fixed Account)
+These endpoints support a retained extended governance surface. They are intentionally outside the primary reduced-budget Stage 2 user journey.
+
 All endpoints below require request header:
 - `X-Admin-Session: <adminSessionKey>`
 
@@ -654,8 +676,8 @@ Purpose: list all join requests with rider + offer references.
 #### GET `/admin/ride-matches`
 Purpose: list all confirmed matches from both join-request and one-off flows.
 
-### 4.5 Location and Map APIs (V2)
-These endpoints support Australia address lookup, map pin reverse lookup, and route overview.
+### 4.6 Location and Map APIs (Retained Support)
+These endpoints support Australia address lookup, map pin reverse lookup, and route overview. In the reduced-budget framing, they are treated as location-entry and map-preview aids rather than separate core use cases.
 
 #### GET `/locations/au/search`
 Query params:

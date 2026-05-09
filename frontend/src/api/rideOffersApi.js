@@ -517,20 +517,6 @@ export async function markAllNotificationsRead(userId) {
   return response.json();
 }
 
-export async function createRating(requestBody) {
-  const response = await fetch(`${API_BASE_URL}/ratings`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
 export async function searchAustralianLocations(query, limit = 8) {
   const params = new URLSearchParams();
   if (query && query.trim() !== '') {

@@ -2797,7 +2797,7 @@ State is centralized in a top-level object with segmented slices:
 - my trips
 - driver hub
 - admin
-- tutorial/intro support slices
+- tutorial/public-auth support slices
 
 Benefits:
 - easy debugging through one in-memory model
@@ -3803,7 +3803,7 @@ Because this is native JS, explicit lifecycle discipline is essential. The proje
 ### 40.2 Route Dispatch Detail
 
 The dispatcher maps static and dynamic routes:
-- static pages (intro/tutorial/login/register/admin)
+- static pages (tutorial/login/register/admin)
 - core workflow routes (find, post, search results, history, profile, driver hub)
 - dynamic detail routes (`ride-offer-details/:offerId`, `ride-requests/:id/offers`)
 

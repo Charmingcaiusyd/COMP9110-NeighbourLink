@@ -33,7 +33,6 @@ const state = {
   session: readSession(),
   menuOpen: false,
   rideConfirmed: null,
-  introFaqIndex: 0,
   tutorial: {
     track: 'RIDER',
     mode: 'GUIDED',
@@ -192,7 +191,6 @@ function createDefaultMyTrips() {
     driverOfferPage: 1,
     requestActionError: '',
     requestActionMessage: '',
-    ratingForms: {},
     focusHandled: false,
   };
 }
@@ -545,8 +543,6 @@ function publicLayout(title, subtitle, html) {
           <div class="intro-nav-actions">
             <button class="intro-nav-toggle" data-action="toggle-menu" type="button">${state.menuOpen ? 'Close Menu' : 'Menu'}</button>
             <nav class="intro-nav-links ${state.menuOpen ? 'is-open' : ''}">
-              <a class="intro-link" href="/intro" data-nav="1">Intro</a>
-              <a class="intro-link" href="/tutorial" data-nav="1">Tutorial</a>
               ${state.session ? `<a class="btn" href="${home}" data-nav="1">Open App</a>` : '<a class="btn" href="/login" data-nav="1">Log In</a>'}
             </nav>
           </div>
@@ -578,12 +574,9 @@ function userLayout(title, html) {
           <div class="nav-actions">
             <button class="nav-toggle" data-action="toggle-menu" type="button">${state.menuOpen ? 'Close Menu' : 'Menu'}</button>
             <nav class="app-nav ${state.menuOpen ? 'is-open' : ''}">
-              <a class="nav-link" href="/intro" data-nav="1">Intro</a>
-              <a class="nav-link" href="/tutorial" data-nav="1">Tutorial</a>
               <a class="nav-link" href="/" data-nav="1">Find a Ride</a>
               <a class="nav-link" href="/post-ride-request" data-nav="1">Post a Request</a>
               <a class="nav-link" href="/my-trips" data-nav="1">My Trips</a>
-              <a class="nav-link" href="/profile" data-nav="1">Profile</a>
               ${session?.role === 'DRIVER' ? '<a class="nav-link" href="/driver-hub" data-nav="1">Driver Hub</a>' : ''}
               <button class="btn btn-secondary nav-btn" data-action="logout" type="button">Log Out</button>
             </nav>
@@ -607,8 +600,6 @@ function adminLayout(html) {
           <p class="admin-subtitle">Fixed-account governance dashboard</p>
         </div>
         <div class="form-actions admin-top-actions">
-          <a class="btn btn-secondary" href="/intro" data-nav="1">Intro</a>
-          <a class="btn btn-secondary" href="/tutorial" data-nav="1">Tutorial</a>
           <button class="btn" data-action="logout" type="button">Log Out</button>
         </div>
       </header>
@@ -661,41 +652,6 @@ function resolveTripTypeLabel(type) {
   if (type === 'JOIN_REQUEST') return 'Join Request Match';
   if (type === 'ONE_OFF_REQUEST') return 'One-Off Request Match';
   return type || 'Unknown';
-}
-
-function resolveTripKey(trip) {
-  if (trip?.rideMatchId != null) return String(trip.rideMatchId);
-  return `${trip?.driverId || 'driver'}-${trip?.riderId || 'rider'}-${trip?.tripDate || 'date'}-${trip?.tripTime || 'time'}`;
-}
-
-function resolveRatingTarget(trip, role) {
-  if (!trip) return { targetUserId: null, targetName: 'User' };
-  if (role === 'RIDER') {
-    const driverId = Number(trip.driverId);
-    return {
-      targetUserId: Number.isInteger(driverId) && driverId > 0 ? driverId : null,
-      targetName: trip.driverName || 'Driver',
-    };
-  }
-  const riderId = Number(trip.riderId);
-  return {
-    targetUserId: Number.isInteger(riderId) && riderId > 0 ? riderId : null,
-    targetName: trip.riderName || 'Rider',
-  };
-}
-
-function ensureRatingForm(tripKey) {
-  if (!state.myTrips.ratingForms[tripKey]) {
-    state.myTrips.ratingForms[tripKey] = {
-      score: '5',
-      comment: '',
-      submitting: false,
-      error: '',
-      message: '',
-      submitted: false,
-    };
-  }
-  return state.myTrips.ratingForms[tripKey];
 }
 
 function mapOpenStreetMapUrl(lat, lng) {
@@ -757,110 +713,6 @@ function clearPostRedirectTimer() {
   }
 }
 
-function renderIntro() {
-  publicLayout(
-    'NeighbourLink Product Introduction',
-    'High-quality static showcase aligned with your real backend logic.',
-    `
-      <section class="intro-hero intro-hero-rich" id="overview">
-        <div class="intro-hero-grid intro-hero-grid-rich">
-          <div>
-            <span class="intro-kicker">NeighbourLink Product Showcase</span>
-            <h1 class="intro-title">Polished native frontend for Rider, Driver, and Admin workflows</h1>
-            <p class="intro-lead">
-              This page maps business context, approved use cases, trust logic, and architecture constraints for demonstration.
-            </p>
-            <div class="intro-hero-actions">
-              ${state.session ? '<a class="btn" href="/" data-nav="1">Go to App</a>' : '<a class="btn" href="/login" data-nav="1">Sign In</a><a class="btn btn-secondary" href="/register" data-nav="1">Create Account</a>'}
-            </div>
-            <div class="intro-hero-points">
-              <span>Three approved use cases implemented end-to-end.</span>
-              <span>Trust-first acceptance logic enforced in UI and API.</span>
-              <span>Admin governance features support review-ready demonstration.</span>
-            </div>
-          </div>
-          <div class="intro-stats intro-stats-rich">
-            <article class="stat-card"><strong>3</strong><span>Approved use cases</span></article>
-            <article class="stat-card"><strong>9+</strong><span>Core domain entities</span></article>
-            <article class="stat-card"><strong>1</strong><span>Fixed admin role</span></article>
-            <article class="stat-card"><strong>Native</strong><span>HTML + CSS + JS</span></article>
-          </div>
-        </div>
-      </section>
-
-      <section class="intro-section">
-        <h2 class="intro-section-title">Capability Matrix</h2>
-        <div class="intro-capability-grid">
-          <article class="intro-capability-card"><h3>Fast Rider Search</h3><p>Search available ride offers with route/date/seat filters.</p></article>
-          <article class="intro-capability-card"><h3>Join Request Lifecycle</h3><p>Submit, validate, accept or reject with explicit status transitions.</p></article>
-          <article class="intro-capability-card"><h3>One-Off Matching</h3><p>Post one-off request, receive offers, accept one final offer.</p></article>
-          <article class="intro-capability-card"><h3>Trust Before Acceptance</h3><p>Driver profile + rating summary shown before rider confirmation.</p></article>
-          <article class="intro-capability-card"><h3>Driver Verification Docs</h3><p>Licence / spare-seat proof / rego upload and admin review.</p></article>
-          <article class="intro-capability-card"><h3>Admin Operations</h3><p>Pagination, search, row edit, and batch status updates.</p></article>
-        </div>
-      </section>
-
-      <section class="intro-section">
-        <h2 class="intro-section-title">Approved Use Cases</h2>
-        <div class="intro-usecase-grid">
-          <article class="intro-usecase-card">
-            <p class="intro-usecase-id">UC1</p>
-            <h3>Search Available Ride Offers</h3>
-            <ul><li>Set Origin, Destination, and Trip Date</li><li>Review matching offers</li><li>Inspect trust details before request</li></ul>
-          </article>
-          <article class="intro-usecase-card">
-            <p class="intro-usecase-id">UC2</p>
-            <h3>Request to Join Ride Offer</h3>
-            <ul><li>Submit join request with seat count</li><li>Driver decides with meeting point</li><li>Seat updates and match creation</li></ul>
-          </article>
-          <article class="intro-usecase-card">
-            <p class="intro-usecase-id">UC3</p>
-            <h3>Post One-Off Request + Accept Driver Offer</h3>
-            <ul><li>Rider posts one-off request</li><li>Drivers submit responses</li><li>Rider accepts one and system records match</li></ul>
-          </article>
-        </div>
-      </section>
-
-      <section class="intro-section">
-        <h2 class="intro-section-title">Architecture Snapshot</h2>
-        <div class="intro-architecture-grid">
-          <article class="intro-architecture-card"><h3>Backend</h3><ul><li>Java 17 + Spring Boot</li><li>REST + DTO boundary</li><li>SQLite + JPA</li></ul></article>
-          <article class="intro-architecture-card"><h3>Frontend</h3><ul><li>Native HTML/CSS/JS on Vite</li><li>Route-driven SPA behavior</li><li>Mobile responsive layouts</li></ul></article>
-          <article class="intro-architecture-card"><h3>Domain</h3><ul><li>User/Profile/Rating</li><li>RideOffer/JoinRequest/RideMatch</li><li>RideRequest/RideRequestOffer</li></ul></article>
-          <article class="intro-architecture-card"><h3>Rules</h3><ul><li>No overbooking</li><li>Match only after acceptance</li><li>Trust visible before acceptance</li></ul></article>
-        </div>
-      </section>
-
-      <section class="intro-section">
-        <h2 class="intro-section-title">Project FAQ</h2>
-        <div class="faq-list">
-          ${[
-            { q: 'Is this aligned to implemented behavior?', a: 'Yes. This page reflects current backend + frontend behavior.' },
-            { q: 'Why is trust emphasized in flow?', a: 'Trust-before-acceptance is a core business requirement.' },
-            { q: 'Can this be mapped to UML quickly?', a: 'Yes. UC1/UC2/UC3 and domain terms are shown explicitly.' },
-          ].map((faq, idx) => `
-            <article class="faq-item">
-              <button class="faq-trigger" type="button" data-faq-index="${idx}">
-                ${esc(faq.q)}
-                <span>${state.introFaqIndex === idx ? '-' : '+'}</span>
-              </button>
-              ${state.introFaqIndex === idx ? `<div class="faq-body">${esc(faq.a)}</div>` : ''}
-            </article>
-          `).join('')}
-        </div>
-      </section>
-    `,
-  );
-
-  APP_ROOT.querySelectorAll('[data-faq-index]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const idx = Number(btn.dataset.faqIndex);
-      state.introFaqIndex = state.introFaqIndex === idx ? -1 : idx;
-      renderApp();
-    });
-  });
-}
-
 const tutorialTracks = {
   RIDER: {
     label: 'Rider Tutorial',
@@ -870,7 +722,7 @@ const tutorialTracks = {
       'I know Confirm is required before submit.',
       'I can review trust info before requesting.',
       'I can distinguish Join History and One-Off History.',
-      'I can submit post-trip rating.',
+      'I can review request outcomes in My Trips.',
     ],
     guided: [
       { title: 'Search flow setup', detail: 'Set Origin, Destination, and Trip Date. Confirm flow to submit.' },
@@ -878,7 +730,7 @@ const tutorialTracks = {
       { title: 'Track lifecycle', detail: 'Use My Join Request History tabs and Trip Filter.' },
       { title: 'Fallback path', detail: 'If no results, switch to one-off request flow.' },
     ],
-    tasks: ['Task A: Join existing offer', 'Task B: Post one-off fallback', 'Task C: Accept one driver offer', 'Task D: Submit rating'],
+    tasks: ['Task A: Join existing offer', 'Task B: Post one-off fallback', 'Task C: Accept one driver offer', 'Task D: Review final status'],
     demo: ['00:00 Show 3-step search', '01:30 Show trust review', '03:00 Show history tabs', '04:30 Submit one-off and redirect'],
     trouble: [
       { issue: 'No search results', cause: 'Suburb/date/time mismatch', fix: 'Verify suburb/date and increase time flexibility.' },
@@ -892,7 +744,7 @@ const tutorialTracks = {
   },
   DRIVER: {
     label: 'Driver Tutorial',
-    objective: 'Process join requests and one-off responses with seat and verification constraints.',
+    objective: 'Process join requests and one-off responses with seat and availability constraints.',
     checklist: [
       'I can decide pending joins with meeting point on accept.',
       'I can respond to one-off requests without duplicate pending offers.',
@@ -908,36 +760,11 @@ const tutorialTracks = {
     demo: ['00:00 Open Driver Hub', '01:30 Accept with meeting point', '03:00 Reject one request', '04:30 Respond to one-off'],
     trouble: [
       { issue: 'Accept action fails', cause: 'Missing meeting point or ownership mismatch', fix: 'Provide meeting point and verify ownership.' },
-      { issue: 'Cannot submit one-off response', cause: 'Inactive/unverified driver or seat limit', fix: 'Check account/verification and seat capacity.' },
+      { issue: 'Cannot submit one-off response', cause: 'Inactive account or seat limit', fix: 'Check account status and spare seat capacity.' },
     ],
     quiz: [
       { id: 'd1', q: 'What is required on ACCEPTED decision?', options: ['Meeting point', 'Nothing'], answer: 0 },
       { id: 'd2', q: 'Can one driver keep multiple pending offers for same request?', options: ['Yes', 'No'], answer: 1 },
-    ],
-  },
-  ADMIN: {
-    label: 'Admin Tutorial',
-    objective: 'Use fixed admin account to govern users, rides, verification, and trust data.',
-    checklist: [
-      'I can sign in only via dedicated admin login URL.',
-      'I can search, paginate, and batch-update statuses.',
-      'I can review driver verification fields and docs.',
-      'I can edit ride/request/match/rating records.',
-    ],
-    guided: [
-      { title: 'Fixed credential entry', detail: 'Admin role cannot register; login only with fixed account.' },
-      { title: 'Dataset operations', detail: 'Use tabs for users/offers/requests/joins/matches/ratings.' },
-      { title: 'Batch governance', detail: 'Select rows and apply bulk status updates safely.' },
-    ],
-    tasks: ['Task A: Verify pending driver account', 'Task B: Bulk close old offers', 'Task C: Correct join status', 'Task D: Audit ratings'],
-    demo: ['00:00 Login admin', '01:00 Edit user status', '02:30 Bulk update offers', '04:00 Edit match status'],
-    trouble: [
-      { issue: 'Admin table appears empty', cause: 'Search/page state', fix: 'Clear search and reset to page 1.' },
-      { issue: 'Auth error on update', cause: 'Admin session expired', fix: 'Logout and login again via /admin/login.' },
-    ],
-    quiz: [
-      { id: 'a1', q: 'Can admin be registered from register page?', options: ['No', 'Yes'], answer: 0 },
-      { id: 'a2', q: 'Best way to update many rows?', options: ['Bulk status action', 'Only one-by-one'], answer: 0 },
     ],
   },
 };
@@ -1172,7 +999,6 @@ function renderLogin() {
         <div class="form-actions">
           <button class="btn" type="submit">Log In</button>
           <a class="btn btn-secondary" href="/register" data-nav="1">Register</a>
-          <a class="btn btn-secondary" href="/admin/login" data-nav="1">Admin</a>
         </div>
       </form>
     </div></section>
@@ -1208,7 +1034,7 @@ function renderRegister() {
     return;
   }
 
-  publicLayout('Register Account', 'Driver registration supports required document upload and admin verification.', `
+  publicLayout('Register Account', 'Create a NeighbourLink account to search rides or post one-off requests.', `
     <section class="auth-shell"><div class="auth-card">
       <form class="form-grid" id="register-form" enctype="multipart/form-data">
         <label>Full name<input name="fullName" required></label>
@@ -1510,17 +1336,51 @@ function renderFindRide() {
       ${flow.step === 'ORIGIN' ? `<div class="flow-step-panel">${renderLocationPanel('Origin', flow.origin, 'Search pickup suburb/address', 'origin', 'find')}</div>` : ''}
       ${flow.step === 'DESTINATION' ? `<div class="flow-step-panel"><p class="status-note"><strong>Current origin:</strong> ${esc(normalizeLocationText(flow.origin))}. You can return to edit.</p>${renderLocationPanel('Destination', flow.destination, 'Search destination suburb/address', 'destination', 'find')}</div>` : ''}
       ${flow.step === 'TRIP' ? `
-        <div class="flow-step-panel">
-          <p class="status-note"><strong>Origin:</strong> ${esc(normalizeLocationText(flow.origin))} | <strong>Destination:</strong> ${esc(normalizeLocationText(flow.destination))}</p>
-          <div class="flow-summary-grid">
-            <label>Trip date<input type="date" data-find-field="departureDate" value="${esc(flow.form.departureDate)}"></label>
-            <label>Departure time (optional)<input type="time" data-find-field="departureTime" value="${esc(flow.form.departureTime)}"></label>
-            <label>Time flexibility (0-6h)
+        <div class="flow-step-panel flow-step-panel-rich">
+          <div class="journey-summary-card">
+            <div class="journey-summary-head">
+              <p class="journey-summary-kicker">Search summary</p>
+              <h3>Confirm your ride search filters</h3>
+              <p>Check the route first, then fine-tune timing flexibility and passenger demand before searching available offers.</p>
+            </div>
+            <div class="journey-summary-route">
+              <article class="journey-stop-card">
+                <span class="journey-stop-label">Origin</span>
+                <strong>${esc(normalizeLocationText(flow.origin))}</strong>
+                <small>${esc(normalizeText(flow.origin.address) || normalizeLocationText(flow.origin))}</small>
+              </article>
+              <span class="journey-route-arrow">to</span>
+              <article class="journey-stop-card journey-stop-card-destination">
+                <span class="journey-stop-label">Destination</span>
+                <strong>${esc(normalizeLocationText(flow.destination))}</strong>
+                <small>${esc(normalizeText(flow.destination.address) || normalizeLocationText(flow.destination))}</small>
+              </article>
+            </div>
+          </div>
+
+          <div class="request-detail-grid request-detail-grid-search">
+            <label class="request-detail-card">
+              <span class="request-detail-label">Trip date</span>
+              <input type="date" data-find-field="departureDate" value="${esc(flow.form.departureDate)}">
+              <small>Search only checks offers that depart on the same day.</small>
+            </label>
+            <label class="request-detail-card">
+              <span class="request-detail-label">Departure time (optional)</span>
+              <input type="time" data-find-field="departureTime" value="${esc(flow.form.departureTime)}">
+              <small>Leave blank to search across the day instead of a specific time.</small>
+            </label>
+            <label class="request-detail-card">
+              <span class="request-detail-label">Time flexibility (0-6h)</span>
               <select data-find-field="timeFlexHours">
                 ${[0, 1, 2, 3, 4, 5, 6].map((h) => `<option value="${h}" ${String(h) === String(flow.form.timeFlexHours || '0') ? 'selected' : ''}>${h} hour${h === 1 ? '' : 's'}</option>`).join('')}
               </select>
+              <small>Broaden the time window when you want nearby departures included.</small>
             </label>
-            <label>Passengers<input type="number" min="1" data-find-field="passengerCount" value="${esc(flow.form.passengerCount)}"></label>
+            <label class="request-detail-card">
+              <span class="request-detail-label">Passengers</span>
+              <input type="number" min="1" data-find-field="passengerCount" value="${esc(flow.form.passengerCount)}">
+              <small>Only offers with enough spare seats will appear in the results.</small>
+            </label>
           </div>
         </div>
       ` : ''}
@@ -1532,10 +1392,23 @@ function renderFindRide() {
       </div>
     </section>
 
-    <section class="section-card">
-      <h2>Notes</h2>
-      <p>You can return to earlier steps and correct any field before confirmation.</p>
-      <p>If no suitable offers are found, switch to one-off request flow.</p>
+    <section class="section-card support-guide-card">
+      <p class="support-guide-kicker">Search tips</p>
+      <h2>Make the search work for you</h2>
+      <div class="support-guide-grid">
+        <article class="support-guide-item">
+          <strong>Adjust before confirm</strong>
+          <p>You can move back to Origin or Destination at any time before running the final search.</p>
+        </article>
+        <article class="support-guide-item">
+          <strong>Use time flexibility carefully</strong>
+          <p>If you want more options, widen the departure window instead of locking to one exact time.</p>
+        </article>
+        <article class="support-guide-item">
+          <strong>Fallback path available</strong>
+          <p>If no ride offers match, switch to the one-off request flow and let drivers respond to you.</p>
+        </article>
+      </div>
     </section>
   `);
 
@@ -1633,14 +1506,31 @@ async function renderSearchResults(token) {
   };
 
   userLayout('Search Results', `
-    <section class="section-card">
-      <h2>Search Summary</h2>
-      <p><strong>From:</strong> ${esc(filters.origin || 'Any')}</p>
-      <p><strong>To:</strong> ${esc(filters.destination || 'Any')}</p>
-      <p><strong>Date:</strong> ${esc(filters.departureDate || 'Any')}</p>
-      <p><strong>Time:</strong> ${esc(filters.departureTime || 'Any')}</p>
-      <p><strong>Time tolerance:</strong> ${filters.departureTime ? `+/- ${esc(filters.timeFlexHours || '0')}h` : 'Not applied'}</p>
-      <p><strong>Passengers:</strong> ${esc(filters.passengerCount || 'Any')}</p>
+    <section class="section-card search-summary-card">
+      <div class="search-summary-head">
+        <p class="support-guide-kicker">Search summary</p>
+        <h2>Matching filters for this ride search</h2>
+        <p>These are the criteria used to look for open ride offers before you review trust details and request a seat.</p>
+      </div>
+      <div class="journey-summary-route">
+        <article class="journey-stop-card">
+          <span class="journey-stop-label">Origin</span>
+          <strong>${esc(filters.origin || 'Any')}</strong>
+          <small>Pickup suburb or address preference</small>
+        </article>
+        <span class="journey-route-arrow">to</span>
+        <article class="journey-stop-card journey-stop-card-destination">
+          <span class="journey-stop-label">Destination</span>
+          <strong>${esc(filters.destination || 'Any')}</strong>
+          <small>Drop-off suburb or destination preference</small>
+        </article>
+      </div>
+      <div class="search-summary-facts">
+        <span class="summary-fact-chip"><strong>Date</strong>${esc(filters.departureDate || 'Any')}</span>
+        <span class="summary-fact-chip"><strong>Time</strong>${esc(filters.departureTime || 'Any')}</span>
+        <span class="summary-fact-chip"><strong>Time tolerance</strong>${filters.departureTime ? `+/- ${esc(filters.timeFlexHours || '0')}h` : 'Not applied'}</span>
+        <span class="summary-fact-chip"><strong>Passengers</strong>${esc(filters.passengerCount || 'Any')}</span>
+      </div>
     </section>
     <section class="section-card" id="results-box"><p>Loading matching ride offers...</p></section>
   `);
@@ -1652,8 +1542,11 @@ async function renderSearchResults(token) {
     const box = APP_ROOT.querySelector('#results-box');
     if (list.length === 0) {
       box.innerHTML = `
-        <h2>No Results</h2>
-        <p>No suitable ride offers found.</p>
+        <div class="support-guide-card support-guide-card-empty">
+          <p class="support-guide-kicker">No results</p>
+          <h2>No suitable ride offers found</h2>
+          <p>Try adjusting the search timing or use the one-off request flow so drivers can respond to your trip directly.</p>
+        </div>
         <div class="form-actions">
           <a class="btn btn-secondary" href="/post-ride-request" data-nav="1">Post a One-Off Ride Request</a>
           <a class="btn" href="/" data-nav="1">Back to Find a Ride</a>
@@ -1662,16 +1555,28 @@ async function renderSearchResults(token) {
       return;
     }
     box.innerHTML = `
-      <h2>Matching Ride Offers</h2>
+      <div class="results-head">
+        <div>
+          <p class="support-guide-kicker">Search results</p>
+          <h2>Matching Ride Offers</h2>
+        </div>
+        <p class="results-count">${list.length} offer${list.length === 1 ? '' : 's'} available</p>
+      </div>
       <div class="results-grid">
         ${list.map((offer) => `
           <article class="result-card">
-            <p><strong>Offer #${esc(offer.offerId)}</strong></p>
-            <p><strong>Driver:</strong> ${esc(offer.driver?.driverName || '-')}</p>
-            <p><strong>Route:</strong> ${esc(offer.origin)} to ${esc(offer.destination)}</p>
-            <p><strong>Departure:</strong> ${esc(offer.departureDate)} ${esc(offer.departureTime || '')}</p>
-            <p><strong>Available seats:</strong> ${esc(offer.availableSeats)}</p>
-            <p><strong>Trust:</strong> ${offer.driver?.averageRating != null ? `${Number(offer.driver.averageRating).toFixed(1)} (${offer.driver?.ratingCount || 0})` : 'No ratings yet'}</p>
+            <div class="offer-card-head">
+              <span class="offer-card-id">Offer #${esc(offer.offerId)}</span>
+              <span class="offer-card-trust">${offer.driver?.averageRating != null ? `${Number(offer.driver.averageRating).toFixed(1)} rating` : 'New driver'}</span>
+            </div>
+            <h3 class="offer-card-title">${esc(offer.driver?.driverName || 'Driver')}</h3>
+            <p class="offer-card-route">${esc(offer.origin)} to ${esc(offer.destination)}</p>
+            <div class="offer-card-metrics">
+              <span class="offer-metric"><strong>Date</strong>${esc(offer.departureDate)}</span>
+              <span class="offer-metric"><strong>Time</strong>${esc(offer.departureTime || 'Flexible')}</span>
+              <span class="offer-metric"><strong>Seats</strong>${esc(offer.availableSeats)}</span>
+              <span class="offer-metric"><strong>Trust</strong>${offer.driver?.averageRating != null ? `${Number(offer.driver.averageRating).toFixed(1)} (${offer.driver?.ratingCount || 0})` : 'No ratings yet'}</span>
+            </div>
             <div class="form-actions">
               <a class="btn" href="/ride-offer-details/${esc(offer.offerId)}${window.location.search}" data-nav="1">View Details</a>
             </div>
@@ -1695,27 +1600,55 @@ async function renderRideOfferDetails(token, offerId) {
     if (token !== renderToken) return;
     const maxSeats = detail?.availableSeats || 1;
     APP_ROOT.querySelector('#offer-box').innerHTML = `
-      <div class="two-column">
-        <section class="section-card">
-          <h2>Driver Trust</h2>
-          <p><strong>Name:</strong> ${esc(detail.driver?.driverName || '-')}</p>
-          <p><strong>Rating:</strong> ${detail.driver?.averageRating != null ? `${Number(detail.driver.averageRating).toFixed(1)} (${detail.driver?.ratingCount || 0} ratings)` : 'No ratings yet'}</p>
-          <p><strong>Preferences:</strong> ${esc(detail.driver?.travelPreferences || 'Not provided')}</p>
-          <p><strong>Trust notes:</strong> ${esc(detail.driver?.trustNotes || 'Not provided')}</p>
-          <p><strong>Bio:</strong> ${esc(detail.driver?.bio || 'Not provided')}</p>
+      <section class="section-card search-summary-card detail-hero-card">
+        <div class="search-summary-head">
+          <p class="support-guide-kicker">Ride overview</p>
+          <h2>Review trust and trip details before requesting a seat</h2>
+          <p>The request action stays separate until you finish checking the driver context, timing, and remaining capacity.</p>
+        </div>
+        <div class="journey-summary-route">
+          <article class="journey-stop-card">
+            <span class="journey-stop-label">Origin</span>
+            <strong>${esc(detail.origin)}</strong>
+            <small>Pickup location for this offer</small>
+          </article>
+          <span class="journey-route-arrow">to</span>
+          <article class="journey-stop-card journey-stop-card-destination">
+            <span class="journey-stop-label">Destination</span>
+            <strong>${esc(detail.destination)}</strong>
+            <small>Drop-off destination for this offer</small>
+          </article>
+        </div>
+      </section>
+
+      <div class="two-column detail-card-grid">
+        <section class="section-card detail-info-card">
+          <p class="support-guide-kicker">Driver trust</p>
+          <h2>${esc(detail.driver?.driverName || '-')}</h2>
+          <div class="search-summary-facts detail-fact-grid">
+            <span class="summary-fact-chip"><strong>Rating</strong>${detail.driver?.averageRating != null ? `${Number(detail.driver.averageRating).toFixed(1)} (${detail.driver?.ratingCount || 0} ratings)` : 'No ratings yet'}</span>
+            <span class="summary-fact-chip"><strong>Preferences</strong>${esc(detail.driver?.travelPreferences || 'Not provided')}</span>
+          </div>
+          <div class="trust-panel trust-panel-rich">
+            <p><strong>Trust notes</strong>${esc(detail.driver?.trustNotes || 'Not provided')}</p>
+            <p><strong>Bio</strong>${esc(detail.driver?.bio || 'Not provided')}</p>
+          </div>
         </section>
-        <section class="section-card">
-          <h2>Trip Information</h2>
-          <p><strong>Origin:</strong> ${esc(detail.origin)}</p>
-          <p><strong>Destination:</strong> ${esc(detail.destination)}</p>
-          <p><strong>Date:</strong> ${esc(detail.departureDate)}</p>
-          <p><strong>Time:</strong> ${esc(detail.departureTime || '')}</p>
-          <p><strong>Available seats:</strong> ${esc(detail.availableSeats)}</p>
-          <p><strong>Status:</strong> ${esc(detail.status || '')}</p>
+        <section class="section-card detail-info-card">
+          <p class="support-guide-kicker">Trip information</p>
+          <h2>Offer conditions</h2>
+          <div class="search-summary-facts detail-fact-grid">
+            <span class="summary-fact-chip"><strong>Date</strong>${esc(detail.departureDate)}</span>
+            <span class="summary-fact-chip"><strong>Time</strong>${esc(detail.departureTime || 'Flexible')}</span>
+            <span class="summary-fact-chip"><strong>Available seats</strong>${esc(detail.availableSeats)}</span>
+            <span class="summary-fact-chip"><strong>Status</strong>${esc(detail.status || '')}</span>
+          </div>
         </section>
       </div>
-      <section class="section-card">
+      <section class="section-card support-guide-card">
+        <p class="support-guide-kicker">Seat request</p>
         <h2>Request This Ride</h2>
+        <p>Choose the number of seats you need and submit the join request. The driver will review it before any match is created.</p>
         <form class="form-grid compact-form" id="join-form">
           <label>Requested seats<input type="number" min="1" max="${esc(maxSeats)}" name="requestedSeats" value="1"></label>
           <p id="join-error" class="status-error" style="display:none;"></p>
@@ -1801,13 +1734,49 @@ function renderPostRideRequest() {
       ${flow.step === 'ORIGIN' ? `<div class="flow-step-panel">${renderLocationPanel('Origin', flow.origin, 'Search pickup suburb/address', 'origin', 'post', flow.submitting)}</div>` : ''}
       ${flow.step === 'DESTINATION' ? `<div class="flow-step-panel"><p class="status-note"><strong>Current origin:</strong> ${esc(normalizeLocationText(flow.origin))}. You can return to edit.</p>${renderLocationPanel('Destination', flow.destination, 'Search destination suburb/address', 'destination', 'post', flow.submitting)}</div>` : ''}
       ${flow.step === 'TRIP' ? `
-        <div class="flow-step-panel">
-          <p class="status-note"><strong>Origin:</strong> ${esc(normalizeLocationText(flow.origin))} | <strong>Destination:</strong> ${esc(normalizeLocationText(flow.destination))}</p>
-          <div class="flow-summary-grid">
-            <label>Trip date<input type="date" data-post-field="tripDate" value="${esc(flow.form.tripDate)}" ${flow.submitting ? 'disabled' : ''}></label>
-            <label>Preferred departure time<input type="time" data-post-field="tripTime" value="${esc(flow.form.tripTime)}" ${flow.submitting ? 'disabled' : ''}></label>
-            <label>Passengers<input type="number" min="1" data-post-field="passengerCount" value="${esc(flow.form.passengerCount)}" ${flow.submitting ? 'disabled' : ''}></label>
-            <label>Notes to drivers<textarea rows="3" data-post-field="notes" ${flow.submitting ? 'disabled' : ''}>${esc(flow.form.notes)}</textarea></label>
+        <div class="flow-step-panel flow-step-panel-rich">
+          <div class="journey-summary-card">
+            <div class="journey-summary-head">
+              <p class="journey-summary-kicker">Request summary</p>
+              <h3>Confirm the final trip details</h3>
+              <p>Review the route first, then set the exact timing, seats, and driver notes for this one-off request.</p>
+            </div>
+            <div class="journey-summary-route">
+              <article class="journey-stop-card">
+                <span class="journey-stop-label">Origin</span>
+                <strong>${esc(normalizeLocationText(flow.origin))}</strong>
+                <small>${esc(normalizeText(flow.origin.address) || normalizeLocationText(flow.origin))}</small>
+              </article>
+              <span class="journey-route-arrow">to</span>
+              <article class="journey-stop-card journey-stop-card-destination">
+                <span class="journey-stop-label">Destination</span>
+                <strong>${esc(normalizeLocationText(flow.destination))}</strong>
+                <small>${esc(normalizeText(flow.destination.address) || normalizeLocationText(flow.destination))}</small>
+              </article>
+            </div>
+          </div>
+
+          <div class="request-detail-grid">
+            <label class="request-detail-card">
+              <span class="request-detail-label">Trip date</span>
+              <input type="date" data-post-field="tripDate" value="${esc(flow.form.tripDate)}" ${flow.submitting ? 'disabled' : ''}>
+              <small>Pick the day you want the driver offer to target.</small>
+            </label>
+            <label class="request-detail-card">
+              <span class="request-detail-label">Preferred departure time</span>
+              <input type="time" data-post-field="tripTime" value="${esc(flow.form.tripTime)}" ${flow.submitting ? 'disabled' : ''}>
+              <small>Give drivers a realistic meetup time to respond against.</small>
+            </label>
+            <label class="request-detail-card">
+              <span class="request-detail-label">Passengers</span>
+              <input type="number" min="1" data-post-field="passengerCount" value="${esc(flow.form.passengerCount)}" ${flow.submitting ? 'disabled' : ''}>
+              <small>Seat demand should match the number of riders joining this trip.</small>
+            </label>
+            <label class="request-detail-card request-detail-card-wide">
+              <span class="request-detail-label">Notes to drivers</span>
+              <textarea rows="4" data-post-field="notes" ${flow.submitting ? 'disabled' : ''}>${esc(flow.form.notes)}</textarea>
+              <small>Share useful context such as event timing, luggage, or meeting preferences.</small>
+            </label>
           </div>
         </div>
       ` : ''}
@@ -1823,10 +1792,23 @@ function renderPostRideRequest() {
       </div>
     </section>
 
-    <section class="section-card">
-      <h2>How It Works</h2>
-      <p>Step 1 sets origin, step 2 sets destination, step 3 confirms trip details.</p>
-      <p>If any step is wrong, go back and fix before final confirmation.</p>
+    <section class="section-card support-guide-card">
+      <p class="support-guide-kicker">Request tips</p>
+      <h2>How the one-off flow works</h2>
+      <div class="support-guide-grid">
+        <article class="support-guide-item">
+          <strong>Set the route first</strong>
+          <p>Origin and Destination stay editable until you are happy with the final trip summary.</p>
+        </article>
+        <article class="support-guide-item">
+          <strong>Be specific for drivers</strong>
+          <p>Useful notes help drivers decide whether they can respond with a realistic meeting point and seat offer.</p>
+        </article>
+        <article class="support-guide-item">
+          <strong>Confirmation comes later</strong>
+          <p>Submitting this request does not create a ride match yet. A match only exists after a driver offer is accepted.</p>
+        </article>
+      </div>
     </section>
   `);
 
@@ -2695,7 +2677,7 @@ function renderMyTripsNoTripSection(session) {
       </div>
       ${s.noTripTab === 'GUIDE' ? '<p class="status-note">No confirmed trips yet. Use rider or driver actions to create first match.</p>' : ''}
       ${s.noTripTab === 'RIDER' ? '<div class="form-actions"><a class="btn" href="/" data-nav="1">Find a Ride</a><a class="btn btn-secondary" href="/post-ride-request" data-nav="1">Post One-Off Request</a></div>' : ''}
-      ${s.noTripTab === 'DRIVER' ? '<div class="form-actions"><a class="btn" href="/driver-hub" data-nav="1">Open Driver Hub</a><a class="btn btn-secondary" href="/profile" data-nav="1">Update Profile</a></div>' : ''}
+      ${s.noTripTab === 'DRIVER' ? '<div class="form-actions"><a class="btn" href="/driver-hub" data-nav="1">Open Driver Hub</a></div>' : ''}
     </section>
   `;
 }
@@ -2713,11 +2695,6 @@ function renderMyTripsTripResults(session) {
       <h2>Trip Results</h2>
       <div class="results-grid">
         ${paged.list.map((trip) => {
-          const tripKey = resolveTripKey(trip);
-          const form = ensureRatingForm(tripKey);
-          const isHistory = !isUpcomingTrip(trip);
-          const canRate = isHistory && trip.tripStatus === 'CONFIRMED';
-          const target = resolveRatingTarget(trip, session.role);
           return `
             <article class="result-card">
               <p><strong>Match ID:</strong> ${esc(trip.rideMatchId)}</p>
@@ -2728,30 +2705,6 @@ function renderMyTripsTripResults(session) {
               <p><strong>Date and time:</strong> ${esc(trip.tripDate || '-')} ${esc(trip.tripTime || '-')}</p>
               <p><strong>Meeting point:</strong> ${esc(trip.meetingPoint || 'Not provided')}</p>
               <p><strong>Status:</strong> ${esc(trip.tripStatus || '-')}</p>
-              ${canRate ? `
-                <div class="trip-rating-box">
-                  <p><strong>Rate this trip partner:</strong> ${esc(target.targetName)}</p>
-                  <div class="form-grid rating-form">
-                    <label>Score
-                      <select data-rating-field="${esc(tripKey)}.score" ${form.submitting || !target.targetUserId ? 'disabled' : ''}>
-                        <option value="5" ${form.score === '5' ? 'selected' : ''}>5 - Excellent</option>
-                        <option value="4" ${form.score === '4' ? 'selected' : ''}>4 - Good</option>
-                        <option value="3" ${form.score === '3' ? 'selected' : ''}>3 - Okay</option>
-                        <option value="2" ${form.score === '2' ? 'selected' : ''}>2 - Poor</option>
-                        <option value="1" ${form.score === '1' ? 'selected' : ''}>1 - Very poor</option>
-                      </select>
-                    </label>
-                    <label>Comment (optional)<textarea data-rating-field="${esc(tripKey)}.comment" maxLength="300" ${form.submitting || !target.targetUserId ? 'disabled' : ''}>${esc(form.comment)}</textarea></label>
-                    ${form.error ? `<p class="status-error">${esc(form.error)}</p>` : ''}
-                    ${form.message ? `<p class="status-success">${esc(form.message)}</p>` : ''}
-                    <div class="form-actions">
-                      <button class="btn btn-secondary" type="button" data-action="submit-rating" data-trip-key="${esc(tripKey)}" data-target-user-id="${esc(target.targetUserId || '')}" ${form.submitting || !target.targetUserId ? 'disabled' : ''}>
-                        ${form.submitting ? 'Submitting...' : (form.submitted ? 'Submit Again' : 'Submit Rating')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ` : ''}
             </article>
           `;
         }).join('')}
@@ -3059,51 +3012,6 @@ async function renderMyTrips(token) {
     });
   });
 
-  APP_ROOT.querySelectorAll('[data-rating-field]').forEach((input) => {
-    input.addEventListener('input', () => {
-      const [tripKey, field] = String(input.dataset.ratingField || '').split('.');
-      const form = ensureRatingForm(tripKey);
-      form[field] = input.value;
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="submit-rating"]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const tripKey = btn.dataset.tripKey;
-      const targetUserId = Number(btn.dataset.targetUserId || 0);
-      const form = ensureRatingForm(tripKey);
-      form.error = '';
-      form.message = '';
-      if (!targetUserId) {
-        form.error = 'Unable to identify rating target for this trip.';
-        renderApp();
-        return;
-      }
-      const score = Number(form.score);
-      if (!Number.isInteger(score) || score < 1 || score > 5) {
-        form.error = 'Score must be from 1 to 5.';
-        renderApp();
-        return;
-      }
-      form.submitting = true;
-      renderApp();
-      try {
-        const response = await api.createRating({
-          raterUserId: session.userId,
-          targetUserId,
-          score,
-          comment: normalizeText(form.comment) || null,
-        });
-        form.message = `Rated ${response?.targetUserName || 'trip partner'} with ${score}/5.`;
-        form.submitted = true;
-      } catch (error) {
-        form.error = error.message || 'Unable to submit rating.';
-      } finally {
-        form.submitting = false;
-        renderApp();
-      }
-    });
-  });
 }
 
 function getAdminSessionKey() {
@@ -3760,7 +3668,7 @@ async function renderAdmin(token) {
 }
 
 function renderNotFound() {
-  const fallback = state.session ? (state.session.role === 'ADMIN' ? '/admin' : '/') : '/intro';
+  const fallback = state.session ? (state.session.role === 'ADMIN' ? '/admin' : '/') : '/login';
   navigate(fallback, true);
 }
 
@@ -3773,7 +3681,6 @@ async function renderApp() {
     clearPostRedirectTimer();
   }
 
-  if (path === '/intro') return renderIntro();
   if (path === '/tutorial') return renderTutorial();
   if (path === '/login') return renderLogin();
   if (path === '/register') return renderRegister();
