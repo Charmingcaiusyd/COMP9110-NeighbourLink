@@ -9,6 +9,7 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 const APP_ROOT = document.getElementById('app');
 const SESSION_KEY = 'neighbourlink.session';
+const PROFILE_PREFS_KEY_PREFIX = 'neighbourlink.profile.prefs.';
 const FIXED_ADMIN_EMAIL = 'admin@neighbourlink.local';
 const FIXED_ADMIN_PASSWORD = 'admin12345';
 
@@ -162,6 +163,12 @@ function createDefaultProfileState() {
       travelPreferences: '',
       trustNotes: '',
     },
+    prefsLoadedForUserId: null,
+    paymentMethods: [],
+    paymentError: '',
+    paymentMessage: '',
+    securityError: '',
+    securityMessage: '',
   };
 }
 
@@ -182,6 +189,9 @@ function createDefaultMyTrips() {
     tripFilter: 'UPCOMING',
     tripTypeFilter: 'ALL',
     tripPage: 1,
+    unifiedStageTab: 'ALL',
+    unifiedPathTab: 'ALL',
+    unifiedPage: 1,
     noTripTab: 'GUIDE',
     joinTab: 'PENDING',
     joinPage: 1,
@@ -284,6 +294,56 @@ function saveSession(session) {
     state.driverHub = createDefaultDriverHub();
     state.admin = createDefaultAdmin();
   }
+}
+
+function profilePrefsStorageKey(userId) {
+  return `${PROFILE_PREFS_KEY_PREFIX}${userId}`;
+}
+
+function sanitizePaymentMethods(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => ({
+      id: normalizeText(item?.id) || `pm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      cardType: normalizeText(item?.cardType) || 'Visa',
+      last4: normalizeText(item?.last4).replace(/\D/g, '').slice(-4),
+      expiry: normalizeText(item?.expiry).slice(0, 5),
+      primary: Boolean(item?.primary),
+    }))
+    .filter((item) => item.last4.length === 4 && item.expiry.length >= 4);
+}
+
+function readProfilePrefs(userId) {
+  try {
+    const key = profilePrefsStorageKey(userId);
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return { paymentMethods: [] };
+    const parsed = JSON.parse(raw);
+    const paymentMethods = sanitizePaymentMethods(parsed?.paymentMethods);
+    return { paymentMethods };
+  } catch {
+    return { paymentMethods: [] };
+  }
+}
+
+function writeProfilePrefs(userId, paymentMethods) {
+  const key = profilePrefsStorageKey(userId);
+  const payload = {
+    paymentMethods: sanitizePaymentMethods(paymentMethods),
+  };
+  window.localStorage.setItem(key, JSON.stringify(payload));
+}
+
+function ensureProfilePrefsLoaded(userId) {
+  const profile = state.profile;
+  if (profile.prefsLoadedForUserId === userId) return;
+  const prefs = readProfilePrefs(userId);
+  profile.paymentMethods = prefs.paymentMethods;
+  profile.paymentError = '';
+  profile.paymentMessage = '';
+  profile.securityError = '';
+  profile.securityMessage = '';
+  profile.prefsLoadedForUserId = userId;
 }
 
 function esc(value) {
@@ -575,8 +635,8 @@ function userLayout(title, html) {
             <button class="nav-toggle" data-action="toggle-menu" type="button">${state.menuOpen ? 'Close Menu' : 'Menu'}</button>
             <nav class="app-nav ${state.menuOpen ? 'is-open' : ''}">
               <a class="nav-link" href="/" data-nav="1">Find a Ride</a>
-              <a class="nav-link" href="/post-ride-request" data-nav="1">Post a Request</a>
               <a class="nav-link" href="/my-trips" data-nav="1">My Trips</a>
+              <a class="nav-link" href="/profile" data-nav="1">Profile</a>
               ${session?.role === 'DRIVER' ? '<a class="nav-link" href="/driver-hub" data-nav="1">Driver Hub</a>' : ''}
               <button class="btn btn-secondary nav-btn" data-action="logout" type="button">Log Out</button>
             </nav>
@@ -674,6 +734,36 @@ function normalizeSuburbCandidates(value) {
   return unique;
 }
 
+function parseTripDateTime(dateValue, timeValue) {
+  const dateText = normalizeText(dateValue);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) return null;
+  const timeText = normalizeText(timeValue);
+  if (!/^\d{2}:\d{2}$/.test(timeText)) return null;
+  const dt = new Date(`${dateText}T${timeText}:00`);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt;
+}
+
+function resolveAutoFlowMode(filters, now = new Date()) {
+  const tripAt = parseTripDateTime(filters.departureDate, filters.departureTime);
+  if (!tripAt) {
+    return { mode: 'REQUEST', hoursUntilTrip: null, reason: 'NO_TIME_OR_INVALID' };
+  }
+  const hoursUntilTrip = (tripAt.getTime() - now.getTime()) / 3600000;
+  if (hoursUntilTrip > 3) {
+    return { mode: 'REQUEST', hoursUntilTrip, reason: 'OVER_3H' };
+  }
+  return { mode: 'FIND', hoursUntilTrip, reason: 'WITHIN_3H' };
+}
+
+function resolveAutoRequestTripTime(value, now = new Date()) {
+  const text = normalizeText(value);
+  if (/^\d{2}:\d{2}$/.test(text)) return text;
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
 async function searchRideOffersWithSynonyms(filters) {
   const origins = normalizeSuburbCandidates(filters.origin);
   const destinations = normalizeSuburbCandidates(filters.destination);
@@ -713,6 +803,35 @@ function clearPostRedirectTimer() {
   }
 }
 
+async function createOneOffRequestFromFindFlow(session, filters, locationMeta = {}) {
+  const origin = normalizeText(filters.origin);
+  const destination = normalizeText(filters.destination);
+  const tripDate = normalizeText(filters.departureDate);
+  const tripTime = resolveAutoRequestTripTime(filters.departureTime);
+  const passengerCount = Number(filters.passengerCount || 1);
+  return api.createOneOffRideRequest({
+    riderId: session.userId,
+    origin,
+    originAddress: normalizeText(locationMeta.originAddress) || origin,
+    originState: normalizeText(locationMeta.originState) || null,
+    originSuburb: normalizeText(locationMeta.originSuburb) || origin,
+    originPostcode: normalizeText(locationMeta.originPostcode) || null,
+    originLatitude: toNullableCoordinate(locationMeta.originLatitude),
+    originLongitude: toNullableCoordinate(locationMeta.originLongitude),
+    destination,
+    destinationAddress: normalizeText(locationMeta.destinationAddress) || destination,
+    destinationState: normalizeText(locationMeta.destinationState) || null,
+    destinationSuburb: normalizeText(locationMeta.destinationSuburb) || destination,
+    destinationPostcode: normalizeText(locationMeta.destinationPostcode) || null,
+    destinationLatitude: toNullableCoordinate(locationMeta.destinationLatitude),
+    destinationLongitude: toNullableCoordinate(locationMeta.destinationLongitude),
+    tripDate,
+    tripTime,
+    passengerCount: Number.isInteger(passengerCount) && passengerCount > 0 ? passengerCount : 1,
+    notes: `Auto-created from Find a Ride flow (${origin} to ${destination}).`,
+  });
+}
+
 const tutorialTracks = {
   RIDER: {
     label: 'Rider Tutorial',
@@ -728,7 +847,7 @@ const tutorialTracks = {
       { title: 'Search flow setup', detail: 'Set Origin, Destination, and Trip Date. Confirm flow to submit.' },
       { title: 'Trust review before action', detail: 'Inspect profile/rating in Ride Offer Details before requesting.' },
       { title: 'Track lifecycle', detail: 'Use My Join Request History tabs and Trip Filter.' },
-      { title: 'Fallback path', detail: 'If no results, switch to one-off request flow.' },
+      { title: 'Fallback path', detail: 'If no results, the system auto-creates a one-off request for you.' },
     ],
     tasks: ['Task A: Join existing offer', 'Task B: Post one-off fallback', 'Task C: Accept one driver offer', 'Task D: Review final status'],
     demo: ['00:00 Show 3-step search', '01:30 Show trust review', '03:00 Show history tabs', '04:30 Submit one-off and redirect'],
@@ -1321,7 +1440,7 @@ function validateFindFlow() {
 }
 
 function renderFindRide() {
-  if (!requireUser()) return;
+  if (!requireRole('RIDER')) return;
   const flow = state.findFlow;
 
   userLayout('Find a Ride', `
@@ -1406,7 +1525,7 @@ function renderFindRide() {
         </article>
         <article class="support-guide-item">
           <strong>Fallback path available</strong>
-          <p>If no ride offers match, switch to the one-off request flow and let drivers respond to you.</p>
+          <p>If no ride offers match within 3 hours, the system automatically creates a one-off request and tracks it in My Trips.</p>
         </article>
       </div>
     </section>
@@ -1488,13 +1607,26 @@ function renderFindRide() {
         params.set('timeFlexHours', normalizeText(flow.form.timeFlexHours) || '0');
       }
       params.set('passengerCount', normalizeText(flow.form.passengerCount) || '1');
+      params.set('originAddress', normalizeText(flow.origin.address));
+      params.set('originState', normalizeText(flow.origin.state));
+      params.set('originSuburb', normalizeText(flow.origin.suburb));
+      params.set('originPostcode', normalizeText(flow.origin.postcode));
+      params.set('originLatitude', normalizeText(flow.origin.latitude));
+      params.set('originLongitude', normalizeText(flow.origin.longitude));
+      params.set('destinationAddress', normalizeText(flow.destination.address));
+      params.set('destinationState', normalizeText(flow.destination.state));
+      params.set('destinationSuburb', normalizeText(flow.destination.suburb));
+      params.set('destinationPostcode', normalizeText(flow.destination.postcode));
+      params.set('destinationLatitude', normalizeText(flow.destination.latitude));
+      params.set('destinationLongitude', normalizeText(flow.destination.longitude));
       navigate(`/search-results?${params.toString()}`);
     });
   }
 }
 
 async function renderSearchResults(token) {
-  if (!requireUser()) return;
+  const session = requireUser();
+  if (!session) return;
   const query = new URLSearchParams(window.location.search);
   const filters = {
     origin: query.get('origin') || '',
@@ -1504,6 +1636,29 @@ async function renderSearchResults(token) {
     timeFlexHours: query.get('timeFlexHours') || '0',
     passengerCount: query.get('passengerCount') || '',
   };
+  const locationMeta = {
+    originAddress: query.get('originAddress') || '',
+    originState: query.get('originState') || '',
+    originSuburb: query.get('originSuburb') || '',
+    originPostcode: query.get('originPostcode') || '',
+    originLatitude: query.get('originLatitude') || '',
+    originLongitude: query.get('originLongitude') || '',
+    destinationAddress: query.get('destinationAddress') || '',
+    destinationState: query.get('destinationState') || '',
+    destinationSuburb: query.get('destinationSuburb') || '',
+    destinationPostcode: query.get('destinationPostcode') || '',
+    destinationLatitude: query.get('destinationLatitude') || '',
+    destinationLongitude: query.get('destinationLongitude') || '',
+  };
+  const isRider = session.role === 'RIDER';
+  const flowMode = resolveAutoFlowMode(filters);
+  const autoModeLabel = flowMode.mode === 'REQUEST'
+    ? (flowMode.reason === 'OVER_3H'
+      ? 'Request a Ride (trip is more than 3 hours away)'
+      : 'Request a Ride (no exact departure time, auto fallback)')
+    : (flowMode.reason === 'WITHIN_3H'
+      ? 'Find a Ride (trip is within 3 hours)'
+      : 'Find a Ride (no exact time provided)');
 
   userLayout('Search Results', `
     <section class="section-card search-summary-card">
@@ -1530,25 +1685,73 @@ async function renderSearchResults(token) {
         <span class="summary-fact-chip"><strong>Time</strong>${esc(filters.departureTime || 'Any')}</span>
         <span class="summary-fact-chip"><strong>Time tolerance</strong>${filters.departureTime ? `+/- ${esc(filters.timeFlexHours || '0')}h` : 'Not applied'}</span>
         <span class="summary-fact-chip"><strong>Passengers</strong>${esc(filters.passengerCount || 'Any')}</span>
+        ${isRider ? `<span class="summary-fact-chip"><strong>Auto mode</strong>${esc(autoModeLabel)}</span>` : ''}
       </div>
     </section>
-    <section class="section-card" id="results-box"><p>Loading matching ride offers...</p></section>
+    <section class="section-card" id="results-box"><p>${flowMode.mode === 'REQUEST' && isRider ? (flowMode.reason === 'OVER_3H' ? 'Trip is more than 3 hours away. Creating one-off request...' : 'No exact departure time provided. Creating one-off request...') : 'Loading matching ride offers...'}</p></section>
   `);
 
   try {
+    const box = APP_ROOT.querySelector('#results-box');
+    if (isRider && flowMode.mode === 'REQUEST') {
+      const created = await createOneOffRequestFromFindFlow(session, filters, locationMeta);
+      if (token !== renderToken) return;
+      const reqId = created.requestId ?? created.rideRequestId ?? null;
+      state.flash.requestHistoryFocus = { focus: 'REQUEST_HISTORY', createdRequestId: reqId };
+      state.myTrips.loaded = false;
+      state.myTrips.focusHandled = false;
+      box.innerHTML = `
+        <div class="support-guide-card">
+          <p class="support-guide-kicker">Auto request created</p>
+          <h2>One-off ride request has been submitted</h2>
+          <p>${flowMode.reason === 'OVER_3H'
+            ? 'Because this trip is more than 3 hours away, the system routed your flow to Request a Ride automatically.'
+            : 'Because no exact departure time was provided, the system routed your flow to Request a Ride automatically.'}</p>
+          <p><strong>Request ID:</strong> ${esc(reqId ?? '-')}</p>
+          <p>Redirecting to My Trips in 3 seconds...</p>
+        </div>
+      `;
+      window.setTimeout(() => {
+        if (token !== renderToken) return;
+        navigate('/my-trips');
+      }, 3000);
+      return;
+    }
+
     const offers = await searchRideOffersWithSynonyms(filters);
     if (token !== renderToken) return;
     const list = Array.isArray(offers) ? offers : [];
-    const box = APP_ROOT.querySelector('#results-box');
     if (list.length === 0) {
+      if (isRider) {
+        box.innerHTML = '<p>No suitable offers found. Creating one-off request automatically...</p>';
+        const created = await createOneOffRequestFromFindFlow(session, filters, locationMeta);
+        if (token !== renderToken) return;
+        const reqId = created.requestId ?? created.rideRequestId ?? null;
+        state.flash.requestHistoryFocus = { focus: 'REQUEST_HISTORY', createdRequestId: reqId };
+        state.myTrips.loaded = false;
+        state.myTrips.focusHandled = false;
+        box.innerHTML = `
+          <div class="support-guide-card support-guide-card-empty">
+            <p class="support-guide-kicker">Auto fallback activated</p>
+            <h2>No suitable ride offers found</h2>
+            <p>Your Find a Ride flow has been automatically converted into a one-off ride request.</p>
+            <p><strong>Request ID:</strong> ${esc(reqId ?? '-')}</p>
+            <p>Redirecting to My Trips in 3 seconds...</p>
+          </div>
+        `;
+        window.setTimeout(() => {
+          if (token !== renderToken) return;
+          navigate('/my-trips');
+        }, 3000);
+        return;
+      }
       box.innerHTML = `
         <div class="support-guide-card support-guide-card-empty">
           <p class="support-guide-kicker">No results</p>
           <h2>No suitable ride offers found</h2>
-          <p>Try adjusting the search timing or use the one-off request flow so drivers can respond to your trip directly.</p>
+          <p>Try adjusting the search timing, location, or seat filters and search again.</p>
         </div>
         <div class="form-actions">
-          <a class="btn btn-secondary" href="/post-ride-request" data-nav="1">Post a One-Off Ride Request</a>
           <a class="btn" href="/" data-nav="1">Back to Find a Ride</a>
         </div>
       `;
@@ -1676,6 +1879,8 @@ async function renderRideOfferDetails(token, offerId) {
           rideOfferId: Number(detail.offerId),
           requestedSeats: seats,
         });
+        state.myTrips.loaded = false;
+        state.myTrips.focusHandled = false;
         state.rideConfirmed = {
           type: 'JOIN_REQUEST_SUBMITTED',
           joinRequest,
@@ -1906,6 +2111,8 @@ function renderPostRideRequest() {
         });
         const reqId = created.requestId || created.rideRequestId || null;
         flow.success = `Request #${reqId != null ? reqId : '-'} submitted successfully. Redirecting to My Trips in 3 seconds...`;
+        state.myTrips.loaded = false;
+        state.myTrips.focusHandled = false;
         state.flash.requestHistoryFocus = { focus: 'REQUEST_HISTORY', createdRequestId: reqId };
         clearPostRedirectTimer();
         flow.redirectTimer = window.setTimeout(() => {
@@ -1969,7 +2176,7 @@ async function renderRideRequestOffers(token, rideRequestId) {
         `).join('')}
       </div>
       <div class="form-actions form-actions-top">
-        <a class="btn btn-secondary" href="/post-ride-request" data-nav="1">Post Another Request</a>
+        <a class="btn btn-secondary" href="/" data-nav="1">Start a New Ride Flow</a>
         <a class="btn" href="/my-trips" data-nav="1">Back to My Trips</a>
       </div>
     `;
@@ -1981,6 +2188,8 @@ async function renderRideRequestOffers(token, rideRequestId) {
         try {
           const acceptedOneOff = await api.acceptRideRequestOffer(session.userId, Number(rideRequestId), offerId);
           const selected = list.find((item) => Number(item.offerId) === offerId) || null;
+          state.myTrips.loaded = false;
+          state.myTrips.focusHandled = false;
           state.rideConfirmed = {
             type: 'ONE_OFF_ACCEPTED',
             acceptedOneOff,
@@ -2006,6 +2215,7 @@ function renderRideConfirmed() {
   let subtitle = 'Your ride arrangement has been processed.';
   let summary = '<p><strong>Status:</strong> Confirmation ready.</p><p>If page refreshed, transient confirmation context may be cleared.</p>';
   let next = '<p>Open My Trips to review latest records.</p>';
+  let paymentLink = '';
 
   if (payload?.type === 'JOIN_REQUEST_SUBMITTED') {
     title = 'Ride Request Submitted';
@@ -2030,6 +2240,9 @@ function renderRideConfirmed() {
       <p><strong>Request status:</strong> ${esc(payload.acceptedOneOff?.rideRequestStatus || '-')}</p>
     `;
     next = '<p>One-off request is now closed for further accepted offers. Check My Trips for details.</p>';
+    if (payload.acceptedOneOff?.rideMatchId != null) {
+      paymentLink = `<a class="btn btn-secondary" href="/payment?rideMatchId=${esc(payload.acceptedOneOff.rideMatchId)}" data-nav="1">Go to Payment</a>`;
+    }
   }
 
   userLayout(title, `
@@ -2041,10 +2254,50 @@ function renderRideConfirmed() {
       <div class="form-actions">
         <a class="btn" href="/my-trips" data-nav="1">Open My Trips</a>
         <a class="btn btn-secondary" href="/" data-nav="1">Return Home</a>
-        <a class="btn btn-secondary" href="/post-ride-request" data-nav="1">Post Another Request</a>
+        <a class="btn btn-secondary" href="/" data-nav="1">Start Another Ride Flow</a>
+        ${paymentLink}
       </div>
     </section>
   `);
+}
+
+function renderPaymentPage() {
+  const session = requireRole('RIDER');
+  if (!session) return;
+  const query = new URLSearchParams(window.location.search);
+  const rideMatchId = normalizeText(query.get('rideMatchId') || '');
+
+  userLayout('Payment (Demo)', `
+    <section class="section-card form-layout-card">
+      <p class="status-note">Prototype-only payment template. No real card processing is performed.</p>
+      <h2>Credit Card Checkout</h2>
+      <p><strong>Ride Match ID:</strong> ${esc(rideMatchId || '-')}</p>
+      <form id="payment-form" class="form-grid compact-form">
+        <label>Cardholder name<input type="text" name="holderName" placeholder="Alex Rider" required></label>
+        <label>Card number<input type="text" name="cardNumber" inputmode="numeric" placeholder="4242 4242 4242 4242" required></label>
+        <label>Expiry<input type="text" name="expiry" placeholder="MM/YY" required></label>
+        <label>CVV<input type="password" name="cvv" inputmode="numeric" placeholder="123" required></label>
+        <label>Billing postcode<input type="text" name="postcode" placeholder="3000" required></label>
+        <p id="payment-feedback" class="status-note">Fill card details and submit a simulated payment confirmation.</p>
+        <div class="form-actions">
+          <button class="btn" type="submit">Pay Now (Demo)</button>
+          <a class="btn btn-secondary" href="/my-trips" data-nav="1">Back to My Trips</a>
+        </div>
+      </form>
+    </section>
+  `);
+
+  const form = APP_ROOT.querySelector('#payment-form');
+  const feedback = APP_ROOT.querySelector('#payment-feedback');
+  if (!form || !feedback) return;
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const card = String(data.get('cardNumber') || '').replace(/\s+/g, '');
+    const last4 = card.slice(-4).padStart(4, '*');
+    feedback.className = 'status-success';
+    feedback.textContent = `Demo payment successful for ride match #${rideMatchId || '-'}. Card ending in ${last4}.`;
+  });
 }
 
 async function ensureProfileLoaded(token, userId) {
@@ -2080,36 +2333,174 @@ async function renderProfile(token) {
   const session = requireUser();
   if (!session) return;
   ensureProfileLoaded(token, session.userId);
+  ensureProfilePrefsLoaded(session.userId);
   const profile = state.profile;
+  const paymentCards = profile.paymentMethods.length === 0
+    ? '<p>No payment methods saved yet.</p>'
+    : `
+      <div class="results-grid">
+        ${profile.paymentMethods.map((item) => `
+          <article class="result-card">
+            <p><strong>${esc(item.cardType)}</strong>${item.primary ? ' (Default)' : ''}</p>
+            <p><strong>Card:</strong> **** **** **** ${esc(item.last4)}</p>
+            <p><strong>Expiry:</strong> ${esc(item.expiry)}</p>
+            <div class="form-actions">
+              <button class="btn btn-secondary" type="button" data-action="remove-payment" data-payment-id="${esc(item.id)}">Remove</button>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+    `;
 
   userLayout('Profile', `
     ${profile.loading ? '<p>Loading profile...</p>' : ''}
     ${profile.error ? `<p class="status-error">${esc(profile.error)}</p>` : ''}
     ${profile.data ? `
       <section class="section-card">
-        <h2>Public Profile Summary</h2>
+        <h2>Account and Security</h2>
         <p><strong>Email:</strong> ${esc(profile.data.email || '-')}</p>
-        <p><strong>Average rating:</strong> ${profile.data.averageRating != null ? Number(profile.data.averageRating).toFixed(1) : 'No ratings yet'}</p>
-        <p><strong>Rating count:</strong> ${esc(profile.data.ratingCount || 0)}</p>
+        <p><strong>Account role:</strong> ${esc(session.role || '-')}</p>
+        <p><strong>Average rating:</strong> ${profile.data.averageRating != null ? Number(profile.data.averageRating).toFixed(1) : 'No ratings yet'} (${esc(profile.data.ratingCount || 0)} reviews)</p>
+        <form id="security-form" class="form-grid compact-form">
+          <label>Current password<input type="password" name="currentPassword" autocomplete="current-password"></label>
+          <label>New password<input type="password" name="newPassword" autocomplete="new-password"></label>
+          <label>Confirm new password<input type="password" name="confirmPassword" autocomplete="new-password"></label>
+          ${profile.securityError ? `<p class="status-error">${esc(profile.securityError)}</p>` : ''}
+          ${profile.securityMessage ? `<p class="status-success">${esc(profile.securityMessage)}</p>` : ''}
+          <div class="form-actions"><button class="btn" type="submit">Reset Password (Demo)</button></div>
+        </form>
       </section>
       <section class="section-card">
-        <h2>Edit Profile</h2>
+        <h2>Payment Methods</h2>
+        <p class="status-note">Basic payment setup for demo checkout pages.</p>
+        ${profile.paymentError ? `<p class="status-error">${esc(profile.paymentError)}</p>` : ''}
+        ${profile.paymentMessage ? `<p class="status-success">${esc(profile.paymentMessage)}</p>` : ''}
+        ${paymentCards}
+        <form id="payment-method-form" class="form-grid compact-form">
+          <label>
+            Card type
+            <select name="cardType">
+              <option value="Visa">Visa</option>
+              <option value="Mastercard">Mastercard</option>
+              <option value="Amex">Amex</option>
+            </select>
+          </label>
+          <label>Card last 4 digits<input type="text" name="last4" inputmode="numeric" maxlength="4" placeholder="4242"></label>
+          <label>Expiry (MM/YY)<input type="text" name="expiry" maxlength="5" placeholder="12/29"></label>
+          <label>
+            Set as default
+            <select name="primary">
+              <option value="NO">No</option>
+              <option value="YES">Yes</option>
+            </select>
+          </label>
+          <div class="form-actions"><button class="btn" type="submit">Save Payment Method</button></div>
+        </form>
+      </section>
+      <section class="section-card">
+        <h2>Edit Basic Profile</h2>
         <form id="profile-form" class="form-grid">
           <label>Full name<input type="text" name="fullName" value="${esc(profile.form.fullName)}" ${profile.saving ? 'disabled' : ''}></label>
           <label>Phone<input type="text" name="phone" value="${esc(profile.form.phone)}" ${profile.saving ? 'disabled' : ''}></label>
           <label>Suburb<input type="text" name="suburb" value="${esc(profile.form.suburb)}" ${profile.saving ? 'disabled' : ''}></label>
-          <label>Bio<textarea rows="3" name="bio" ${profile.saving ? 'disabled' : ''}>${esc(profile.form.bio)}</textarea></label>
-          <label>Travel preferences<textarea rows="3" name="travelPreferences" ${profile.saving ? 'disabled' : ''}>${esc(profile.form.travelPreferences)}</textarea></label>
-          <label>Trust notes<textarea rows="3" name="trustNotes" ${profile.saving ? 'disabled' : ''}>${esc(profile.form.trustNotes)}</textarea></label>
           ${profile.message ? `<p class="status-success">${esc(profile.message)}</p>` : ''}
-          <div class="form-actions"><button class="btn" type="submit">${profile.saving ? 'Saving...' : 'Save Profile'}</button></div>
+          <div class="form-actions"><button class="btn" type="submit">${profile.saving ? 'Saving...' : 'Save Basic Profile'}</button></div>
         </form>
       </section>
     ` : ''}
   `);
 
   const form = APP_ROOT.querySelector('#profile-form');
+  const paymentForm = APP_ROOT.querySelector('#payment-method-form');
+  const securityForm = APP_ROOT.querySelector('#security-form');
   if (!form) return;
+
+  if (securityForm) {
+    securityForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      profile.securityError = '';
+      profile.securityMessage = '';
+      const data = new FormData(securityForm);
+      const currentPassword = String(data.get('currentPassword') || '');
+      const newPassword = String(data.get('newPassword') || '');
+      const confirmPassword = String(data.get('confirmPassword') || '');
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        profile.securityError = 'Please fill all password fields.';
+        renderApp();
+        return;
+      }
+      if (newPassword.length < 8) {
+        profile.securityError = 'New password must be at least 8 characters.';
+        renderApp();
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        profile.securityError = 'New password and confirm password do not match.';
+        renderApp();
+        return;
+      }
+      profile.securityMessage = 'Password reset request recorded (demo mode).';
+      renderApp();
+    });
+  }
+
+  if (paymentForm) {
+    paymentForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      profile.paymentError = '';
+      profile.paymentMessage = '';
+      const data = new FormData(paymentForm);
+      const cardType = normalizeText(data.get('cardType') || 'Visa');
+      const last4 = normalizeText(data.get('last4') || '').replace(/\D/g, '');
+      const expiry = normalizeText(data.get('expiry') || '');
+      const primary = normalizeText(data.get('primary') || 'NO') === 'YES';
+      if (last4.length !== 4) {
+        profile.paymentError = 'Card last 4 digits must be exactly 4 numbers.';
+        renderApp();
+        return;
+      }
+      if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry)) {
+        profile.paymentError = 'Expiry format must be MM/YY.';
+        renderApp();
+        return;
+      }
+      const created = {
+        id: `pm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        cardType,
+        last4,
+        expiry,
+        primary,
+      };
+      let nextMethods = [...profile.paymentMethods];
+      if (primary) {
+        nextMethods = nextMethods.map((item) => ({ ...item, primary: false }));
+      }
+      if (!nextMethods.some((item) => item.primary)) {
+        created.primary = true;
+      }
+      nextMethods.unshift(created);
+      profile.paymentMethods = sanitizePaymentMethods(nextMethods);
+      writeProfilePrefs(session.userId, profile.paymentMethods);
+      profile.paymentMessage = `${cardType} ending ${last4} saved.`;
+      renderApp();
+    });
+  }
+
+  APP_ROOT.querySelectorAll('[data-action="remove-payment"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = normalizeText(btn.dataset.paymentId);
+      profile.paymentError = '';
+      profile.paymentMessage = '';
+      const current = profile.paymentMethods.filter((item) => item.id !== id);
+      if (current.length > 0 && !current.some((item) => item.primary)) {
+        current[0] = { ...current[0], primary: true };
+      }
+      profile.paymentMethods = current;
+      writeProfilePrefs(session.userId, profile.paymentMethods);
+      profile.paymentMessage = 'Payment method removed.';
+      renderApp();
+    });
+  });
 
   form.addEventListener('input', () => {
     const data = new FormData(form);
@@ -2117,9 +2508,9 @@ async function renderProfile(token) {
       fullName: String(data.get('fullName') || ''),
       phone: String(data.get('phone') || ''),
       suburb: String(data.get('suburb') || ''),
-      bio: String(data.get('bio') || ''),
-      travelPreferences: String(data.get('travelPreferences') || ''),
-      trustNotes: String(data.get('trustNotes') || ''),
+      bio: profile.form.bio,
+      travelPreferences: profile.form.travelPreferences,
+      trustNotes: profile.form.trustNotes,
     };
   });
 
@@ -2598,17 +2989,219 @@ async function ensureMyTripsLoaded(token, session) {
 
 function applyMyTripsPageSafety() {
   const s = state.myTrips;
+  const unifiedItems = buildUnifiedRiderOrderItems();
+  const filteredUnified = filterUnifiedOrderItems(unifiedItems, s.unifiedStageTab, s.unifiedPathTab);
   const filteredTrips = s.trips.filter((trip) => (s.tripFilter === 'UPCOMING' ? isUpcomingTrip(trip) : !isUpcomingTrip(trip)))
     .filter((trip) => s.tripTypeFilter === 'ALL' || trip.tripType === s.tripTypeFilter);
   const filteredJoin = s.joinHistory.filter((item) => s.joinTab === 'ALL' || item.status === s.joinTab);
   const filteredRequest = s.requestHistory.filter((item) => s.requestTab === 'ALL' || item.status === s.requestTab);
   const filteredDriverOffer = s.driverOfferHistory.filter((item) => s.driverOfferTab === 'ALL' || item.status === s.driverOfferTab);
   const filteredNotifications = s.notifications.filter((item) => (s.notificationTab === 'UNREAD' ? !item.read : true));
+  s.unifiedPage = Math.min(s.unifiedPage, Math.max(1, Math.ceil(filteredUnified.length / PAGE_SIZE)));
   s.tripPage = Math.min(s.tripPage, Math.max(1, Math.ceil(filteredTrips.length / PAGE_SIZE)));
   s.joinPage = Math.min(s.joinPage, Math.max(1, Math.ceil(filteredJoin.length / PAGE_SIZE)));
   s.requestPage = Math.min(s.requestPage, Math.max(1, Math.ceil(filteredRequest.length / PAGE_SIZE)));
   s.driverOfferPage = Math.min(s.driverOfferPage, Math.max(1, Math.ceil(filteredDriverOffer.length / PAGE_SIZE)));
   s.notificationPage = Math.min(s.notificationPage, Math.max(1, Math.ceil(filteredNotifications.length / PAGE_SIZE)));
+}
+
+function parseSortTimestamp(value) {
+  if (!value) return 0;
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) return parsed.getTime();
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function unifiedStageByJoinStatus(status) {
+  if (status === 'PENDING') return 'IN_PROGRESS';
+  if (status === 'ACCEPTED') return 'CONFIRMED';
+  return 'CLOSED';
+}
+
+function unifiedStageByRequestStatus(status) {
+  if (status === 'OPEN') return 'IN_PROGRESS';
+  if (status === 'MATCHED') return 'CONFIRMED';
+  return 'CLOSED';
+}
+
+function unifiedStageByTripStatus(status) {
+  if (status === 'CONFIRMED' || status === 'COMPLETED') return 'CONFIRMED';
+  return 'CLOSED';
+}
+
+function buildUnifiedRiderOrderItems() {
+  const s = state.myTrips;
+  const items = [];
+
+  s.joinHistory.forEach((join) => {
+    const stage = unifiedStageByJoinStatus(join.status);
+    items.push({
+      kind: 'JOIN_REQUEST',
+      pathType: 'JOIN',
+      stage,
+      sortAt: parseSortTimestamp(join.requestDateTime),
+      title: `Join Request #${join.joinRequestId}`,
+      item: join,
+    });
+  });
+
+  s.requestHistory.forEach((request) => {
+    const stage = unifiedStageByRequestStatus(request.status);
+    items.push({
+      kind: 'ONE_OFF_REQUEST',
+      pathType: 'ONE_OFF',
+      stage,
+      sortAt: parseSortTimestamp(`${request.tripDate || ''}T${request.tripTime || '00:00'}:00`),
+      title: `One-Off Request #${request.requestId}`,
+      item: request,
+    });
+  });
+
+  s.trips.forEach((trip) => {
+    const stage = unifiedStageByTripStatus(trip.tripStatus);
+    const pathType = trip.tripType === 'JOIN_REQUEST' ? 'JOIN' : 'ONE_OFF';
+    items.push({
+      kind: 'MATCH',
+      pathType,
+      stage,
+      sortAt: parseSortTimestamp(`${trip.tripDate || ''}T${trip.tripTime || '00:00'}:00`),
+      title: `Ride Match #${trip.rideMatchId}`,
+      item: trip,
+    });
+  });
+
+  items.sort((a, b) => b.sortAt - a.sortAt);
+  return items;
+}
+
+function filterUnifiedOrderItems(items, stageTab, pathTab) {
+  return items.filter((entry) => {
+    const stageOk = stageTab === 'ALL' || entry.stage === stageTab;
+    const pathOk = pathTab === 'ALL' || entry.pathType === pathTab;
+    return stageOk && pathOk;
+  });
+}
+
+function formatUnifiedEntryTime(entry) {
+  if (entry.kind === 'JOIN_REQUEST') {
+    return formatDateTime(entry.item.requestDateTime);
+  }
+  if (entry.kind === 'ONE_OFF_REQUEST') {
+    return `${entry.item.tripDate || '-'} ${entry.item.tripTime || '-'}`;
+  }
+  return `${entry.item.tripDate || '-'} ${entry.item.tripTime || '-'}`;
+}
+
+function renderUnifiedRiderOrderCard(entry, session) {
+  if (entry.kind === 'JOIN_REQUEST') {
+    const join = entry.item;
+    const actionParts = [];
+    if (join.rideMatchId) {
+      actionParts.push(`<a class="btn btn-secondary" href="/payment?rideMatchId=${esc(join.rideMatchId)}" data-nav="1">Payment</a>`);
+    }
+    const actions = actionParts.length > 0 ? `<div class="form-actions">${actionParts.join('')}</div>` : '';
+    return `
+      <article class="result-card unified-order-card">
+        <div class="unified-order-head">
+          <strong>Join Request #${esc(join.joinRequestId)}</strong>
+          <span class="summary-fact-chip"><strong>${esc(entry.stage)}</strong></span>
+        </div>
+        <p><strong>Time:</strong> ${esc(formatUnifiedEntryTime(entry))}</p>
+        <p><strong>Path:</strong> Find -> Join</p>
+        <p><strong>Route:</strong> ${esc(join.originAddress || join.origin)} to ${esc(join.destinationAddress || join.destination)}</p>
+        <p><strong>Trip:</strong> ${esc(join.departureDate || '-')} ${esc(join.departureTime || '-')}</p>
+        <p><strong>Driver:</strong> ${esc(join.driverName || '-')}</p>
+        <p><strong>Status:</strong> <span class="${summarizeStatusClass(join.status)}">${esc(join.status)}</span></p>
+        ${actions}
+      </article>
+    `;
+  }
+
+  if (entry.kind === 'ONE_OFF_REQUEST') {
+    const request = entry.item;
+    const actionParts = [];
+    if (request.status !== 'CLOSED') {
+      actionParts.push(`<a class="btn btn-secondary" href="/ride-requests/${esc(request.requestId)}/offers?riderId=${esc(session.userId)}" data-nav="1">Review Offers</a>`);
+    }
+    if (request.status === 'OPEN') {
+      actionParts.push(`<button class="btn" type="button" data-action="cancel-request" data-request-id="${esc(request.requestId)}">Cancel</button>`);
+    }
+    const actions = actionParts.length > 0 ? `<div class="form-actions">${actionParts.join('')}</div>` : '';
+    return `
+      <article class="result-card unified-order-card">
+        <div class="unified-order-head">
+          <strong>One-Off Request #${esc(request.requestId)}</strong>
+          <span class="summary-fact-chip"><strong>${esc(entry.stage)}</strong></span>
+        </div>
+        <p><strong>Time:</strong> ${esc(formatUnifiedEntryTime(entry))}</p>
+        <p><strong>Path:</strong> Find -> Auto Request</p>
+        <p><strong>Route:</strong> ${esc(request.originAddress || request.origin)} to ${esc(request.destinationAddress || request.destination)}</p>
+        <p><strong>Trip:</strong> ${esc(request.tripDate || '-')} ${esc(request.tripTime || '-')}</p>
+        <p><strong>Status:</strong> <span class="${summarizeStatusClass(request.status)}">${esc(request.status)}</span></p>
+        ${actions}
+      </article>
+    `;
+  }
+
+  const trip = entry.item;
+  const actions = trip.rideMatchId
+    ? `<div class="form-actions"><a class="btn btn-secondary" href="/payment?rideMatchId=${esc(trip.rideMatchId)}" data-nav="1">Payment</a></div>`
+    : '';
+  return `
+    <article class="result-card unified-order-card">
+      <div class="unified-order-head">
+        <strong>Ride Match #${esc(trip.rideMatchId)}</strong>
+        <span class="summary-fact-chip"><strong>${esc(entry.stage)}</strong></span>
+      </div>
+      <p><strong>Time:</strong> ${esc(formatUnifiedEntryTime(entry))}</p>
+      <p><strong>Path:</strong> ${esc(resolveTripTypeLabel(trip.tripType))}</p>
+      <p><strong>Route:</strong> ${esc(trip.originAddress || trip.origin)} to ${esc(trip.destinationAddress || trip.destination)}</p>
+      <p><strong>Trip:</strong> ${esc(trip.tripDate || '-')} ${esc(trip.tripTime || '-')}</p>
+      <p><strong>Driver:</strong> ${esc(trip.driverName || '-')}</p>
+      <p><strong>Status:</strong> <span class="${summarizeStatusClass(trip.tripStatus)}">${esc(trip.tripStatus || '-')}</span></p>
+      ${actions}
+    </article>
+  `;
+}
+
+function renderMyTripsUnifiedRiderOrders(session) {
+  if (session.role !== 'RIDER') return '';
+  const s = state.myTrips;
+  const unifiedItems = buildUnifiedRiderOrderItems();
+  const filtered = filterUnifiedOrderItems(unifiedItems, s.unifiedStageTab, s.unifiedPathTab);
+  const paged = paginateItems(filtered, s.unifiedPage, PAGE_SIZE);
+  s.unifiedPage = paged.page;
+
+  return `
+    <section class="section-card" id="unified-order-anchor">
+      <h2>My Unified Orders</h2>
+      <p class="status-note">All rider records (except notifications) are merged into one timeline card stream, newest first.</p>
+      ${s.requestActionError ? `<p class="status-error">${esc(s.requestActionError)}</p>` : ''}
+      ${s.requestActionMessage ? `<p class="status-success">${esc(s.requestActionMessage)}</p>` : ''}
+      <div class="section-subtabs">
+        <p class="subtabs-label">Stage</p>
+        <div class="subtabs-chip-row">
+          <button class="story-chip ${s.unifiedStageTab === 'IN_PROGRESS' ? 'active' : ''}" type="button" data-unified-stage="IN_PROGRESS">In Progress</button>
+          <button class="story-chip ${s.unifiedStageTab === 'CONFIRMED' ? 'active' : ''}" type="button" data-unified-stage="CONFIRMED">Confirmed</button>
+          <button class="story-chip ${s.unifiedStageTab === 'CLOSED' ? 'active' : ''}" type="button" data-unified-stage="CLOSED">Closed</button>
+          <button class="story-chip ${s.unifiedStageTab === 'ALL' ? 'active' : ''}" type="button" data-unified-stage="ALL">All</button>
+        </div>
+        <p class="subtabs-label">Business path</p>
+        <div class="subtabs-chip-row">
+          <button class="story-chip ${s.unifiedPathTab === 'ALL' ? 'active' : ''}" type="button" data-unified-path="ALL">All Paths</button>
+          <button class="story-chip ${s.unifiedPathTab === 'JOIN' ? 'active' : ''}" type="button" data-unified-path="JOIN">Join Path</button>
+          <button class="story-chip ${s.unifiedPathTab === 'ONE_OFF' ? 'active' : ''}" type="button" data-unified-path="ONE_OFF">One-Off Path</button>
+        </div>
+      </div>
+      ${filtered.length === 0 ? '<p>No records found in this stage/path combination.</p>' : `
+        <div class="results-grid unified-order-grid">
+          ${paged.list.map((entry) => renderUnifiedRiderOrderCard(entry, session)).join('')}
+        </div>
+        ${renderPager('unified', paged.page, paged.totalPages, paged.totalItems)}
+      `}
+    </section>
+  `;
 }
 
 function renderMyTripsNotifications() {
@@ -2676,7 +3269,7 @@ function renderMyTripsNoTripSection(session) {
         </div>
       </div>
       ${s.noTripTab === 'GUIDE' ? '<p class="status-note">No confirmed trips yet. Use rider or driver actions to create first match.</p>' : ''}
-      ${s.noTripTab === 'RIDER' ? '<div class="form-actions"><a class="btn" href="/" data-nav="1">Find a Ride</a><a class="btn btn-secondary" href="/post-ride-request" data-nav="1">Post One-Off Request</a></div>' : ''}
+      ${s.noTripTab === 'RIDER' ? '<div class="form-actions"><a class="btn" href="/" data-nav="1">Start Find a Ride Flow</a></div>' : ''}
       ${s.noTripTab === 'DRIVER' ? '<div class="form-actions"><a class="btn" href="/driver-hub" data-nav="1">Open Driver Hub</a></div>' : ''}
     </section>
   `;
@@ -2840,45 +3433,46 @@ async function renderMyTrips(token) {
   const filteredTripCount = s.trips.filter((trip) => (s.tripFilter === 'UPCOMING' ? isUpcomingTrip(trip) : !isUpcomingTrip(trip)))
     .filter((trip) => s.tripTypeFilter === 'ALL' || trip.tripType === s.tripTypeFilter)
     .length;
+  const riderMainSection = session.role === 'RIDER'
+    ? `${!s.loading && !s.error ? renderMyTripsUnifiedRiderOrders(session) : ''}`
+    : `
+      <section class="section-card form-layout-card">
+        <h2>Trip Filter</h2>
+        <div class="section-subtabs">
+          <p class="subtabs-label">Trip time category</p>
+          <div class="subtabs-row">
+            <button class="${s.tripFilter === 'UPCOMING' ? 'btn' : 'btn btn-secondary'}" type="button" data-trip-filter="UPCOMING">Upcoming</button>
+            <button class="${s.tripFilter === 'HISTORY' ? 'btn' : 'btn btn-secondary'}" type="button" data-trip-filter="HISTORY">History</button>
+          </div>
+          <p class="subtabs-label">Trip type view</p>
+          <div class="subtabs-chip-row">
+            <button class="story-chip ${s.tripTypeFilter === 'ALL' ? 'active' : ''}" type="button" data-trip-type="ALL">All Types</button>
+            <button class="story-chip ${s.tripTypeFilter === 'JOIN_REQUEST' ? 'active' : ''}" type="button" data-trip-type="JOIN_REQUEST">Join Request</button>
+            <button class="story-chip ${s.tripTypeFilter === 'ONE_OFF_REQUEST' ? 'active' : ''}" type="button" data-trip-type="ONE_OFF_REQUEST">One-Off Request</button>
+          </div>
+          <p class="status-note">Showing ${filteredTripCount} trip(s) with this filter combination.</p>
+        </div>
+      </section>
+      ${!s.loading && !s.error ? renderMyTripsNoTripSection(session) : ''}
+      ${!s.loading && !s.error ? renderMyTripsTripResults(session) : ''}
+      ${!s.loading && !s.error && session.role === 'DRIVER' ? renderMyTripsDriverOfferHistory() : ''}
+    `;
 
   userLayout('My Trips', `
-    ${state.flash.requestHistoryFocus && !s.focusHandled ? `<p class="status-note">${state.flash.requestHistoryFocus.createdRequestId != null ? `Request #${esc(state.flash.requestHistoryFocus.createdRequestId)} has been created. It appears in My One-Off Request History.` : 'Your request has been created. It appears in My One-Off Request History.'}</p>` : ''}
+    ${state.flash.requestHistoryFocus && !s.focusHandled ? `<p class="status-note">${state.flash.requestHistoryFocus.createdRequestId != null ? `Request #${esc(state.flash.requestHistoryFocus.createdRequestId)} has been created. It appears in My Unified Orders.` : 'Your request has been created. It appears in My Unified Orders.'}</p>` : ''}
 
     ${renderMyTripsNotifications()}
 
-    <section class="section-card form-layout-card">
-      <h2>Trip Filter</h2>
-      <div class="section-subtabs">
-        <p class="subtabs-label">Trip time category</p>
-        <div class="subtabs-row">
-          <button class="${s.tripFilter === 'UPCOMING' ? 'btn' : 'btn btn-secondary'}" type="button" data-trip-filter="UPCOMING">Upcoming</button>
-          <button class="${s.tripFilter === 'HISTORY' ? 'btn' : 'btn btn-secondary'}" type="button" data-trip-filter="HISTORY">History</button>
-        </div>
-        <p class="subtabs-label">Trip type view</p>
-        <div class="subtabs-chip-row">
-          <button class="story-chip ${s.tripTypeFilter === 'ALL' ? 'active' : ''}" type="button" data-trip-type="ALL">All Types</button>
-          <button class="story-chip ${s.tripTypeFilter === 'JOIN_REQUEST' ? 'active' : ''}" type="button" data-trip-type="JOIN_REQUEST">Join Request</button>
-          <button class="story-chip ${s.tripTypeFilter === 'ONE_OFF_REQUEST' ? 'active' : ''}" type="button" data-trip-type="ONE_OFF_REQUEST">One-Off Request</button>
-        </div>
-        <p class="status-note">Showing ${filteredTripCount} trip(s) with this filter combination.</p>
-      </div>
-    </section>
-
     ${s.loading ? '<p>Loading trips...</p>' : ''}
     ${s.error ? `<p class="status-error">${esc(s.error)}</p>` : ''}
-
-    ${!s.loading && !s.error ? renderMyTripsNoTripSection(session) : ''}
-    ${!s.loading && !s.error ? renderMyTripsTripResults(session) : ''}
-    ${!s.loading && !s.error && session.role === 'RIDER' ? renderMyTripsJoinHistory() : ''}
-    ${!s.loading && !s.error && session.role === 'RIDER' ? renderMyTripsRequestHistory(session) : ''}
-    ${!s.loading && !s.error && session.role === 'DRIVER' ? renderMyTripsDriverOfferHistory() : ''}
+    ${riderMainSection}
   `);
 
   if (state.flash.requestHistoryFocus && !s.focusHandled && !s.loading && !s.error) {
     s.focusHandled = true;
     state.flash.requestHistoryFocus = null;
     window.setTimeout(() => {
-      const anchor = APP_ROOT.querySelector('#request-history-anchor');
+      const anchor = APP_ROOT.querySelector('#unified-order-anchor');
       anchor?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 120);
   }
@@ -2916,6 +3510,22 @@ async function renderMyTrips(token) {
     });
   });
 
+  APP_ROOT.querySelectorAll('[data-unified-stage]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      s.unifiedStageTab = btn.dataset.unifiedStage;
+      s.unifiedPage = 1;
+      renderApp();
+    });
+  });
+
+  APP_ROOT.querySelectorAll('[data-unified-path]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      s.unifiedPathTab = btn.dataset.unifiedPath;
+      s.unifiedPage = 1;
+      renderApp();
+    });
+  });
+
   APP_ROOT.querySelectorAll('[data-join-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
       s.joinTab = btn.dataset.joinTab;
@@ -2945,6 +3555,7 @@ async function renderMyTrips(token) {
     const prev = container.querySelector('[data-page-action="prev"]');
     const next = container.querySelector('[data-page-action="next"]');
     const updatePage = (delta) => {
+      if (key === 'unified') s.unifiedPage += delta;
       if (key === 'trip') s.tripPage += delta;
       if (key === 'join') s.joinPage += delta;
       if (key === 'request') s.requestPage += delta;
@@ -3686,10 +4297,14 @@ async function renderApp() {
   if (path === '/register') return renderRegister();
   if (path === '/admin/login') return renderAdminLogin();
   if (path === '/admin') return renderAdmin(token);
+  if (path === '/post-ride-request') {
+    navigate('/', true);
+    return;
+  }
   if (path === '/') return renderFindRide();
   if (path === '/search-results') return renderSearchResults(token);
-  if (path === '/post-ride-request') return renderPostRideRequest();
   if (path === '/my-trips') return renderMyTrips(token);
+  if (path === '/payment') return renderPaymentPage();
   if (path === '/profile') return renderProfile(token);
   if (path === '/driver-hub') return renderDriverHub(token);
   if (path === '/ride-confirmed') return renderRideConfirmed();

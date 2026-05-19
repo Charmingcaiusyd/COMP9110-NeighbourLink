@@ -775,6 +775,53 @@ textarea:disabled {
   padding: 8px 12px;
 }
 
+#unified-order-anchor .unified-order-grid {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+#unified-order-anchor .unified-order-card {
+  padding: 14px;
+  border-radius: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+#unified-order-anchor .unified-order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#unified-order-anchor .unified-order-card p {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.34;
+  color: #2d4764;
+}
+
+#unified-order-anchor .unified-order-card .summary-fact-chip {
+  white-space: nowrap;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+}
+
+#unified-order-anchor .form-actions {
+  margin-top: 0;
+  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+#unified-order-anchor .btn,
+#unified-order-anchor a.btn {
+  min-height: 30px;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .flow-step-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2661,6 +2708,21 @@ textarea:disabled {
   .form-actions a.btn,
   .location-search-row .btn {
     width: 100%;
+  }
+
+  #unified-order-anchor .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  #unified-order-anchor .form-actions .btn,
+  #unified-order-anchor .form-actions a.btn {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  #unified-order-anchor .unified-order-grid {
+    grid-template-columns: 1fr;
   }
 
   .subtabs-row,

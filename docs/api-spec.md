@@ -10,6 +10,16 @@ The primary assignment-aligned core remains:
 
 The runnable application also retains several supporting or extended endpoints. These remain available for local demonstration, but they are not all part of the primary reduced-budget Stage 2 navigation or prototype emphasis.
 
+Current frontend orchestration (as implemented):
+- Single rider entry point: `Find a Ride` (`/`)
+- Rider flow auto-routing rule after confirm:
+  - when trip is more than 3 hours away -> auto-create one-off ride request
+  - when trip is within 3 hours -> search ride offers first
+  - when no exact departure time is provided -> auto-create one-off ride request
+  - when within-3-hour search has no results -> auto-create one-off ride request
+- Rider outcomes are consolidated in `My Unified Orders` (card stream) under `/my-trips` (notifications remain a separate section)
+- `/payment` is a frontend-only demo template page (no backend payment API)
+
 Base URL (local): `/api`
 Format: JSON
 
@@ -58,7 +68,7 @@ Format: JSON
   - `GET /routes/overview`
 
 ### 3.3 Retained Direct-Access or Extended Endpoints
-- Direct-access account/profile surfaces:
+- Account/profile surfaces (now visible in top navigation as `Profile`):
   - `GET /profiles/{userId}`
   - `PATCH /profiles/{userId}`
   - `POST /auth/social-login`
@@ -760,7 +770,7 @@ Example:
 ## 7. Non-Goals Reminder
 This API intentionally excludes:
 - authentication/authorization complexity
-- payments
+- payment processing APIs (the `/payment` page is frontend demo-only)
 - chat/messaging
 - maps/navigation
 - route optimization
