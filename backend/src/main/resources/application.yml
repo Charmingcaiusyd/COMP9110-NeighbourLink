@@ -22,10 +22,5 @@ server:
     include-message: always
 
 neighbourlink:
-  admin:
-    email: admin@neighbourlink.local
-    password: admin12345
-    full-name: NeighbourLink Admin
-    session-key: NEIGHBOURLINK-ADMIN-SESSION-2026
   storage:
     driver-documents-dir: ./data/driver-documents

@@ -9,13 +9,9 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 const APP_ROOT = document.getElementById('app');
 const SESSION_KEY = 'neighbourlink.session';
-const PROFILE_PREFS_KEY_PREFIX = 'neighbourlink.profile.prefs.';
-const FIXED_ADMIN_EMAIL = 'admin@neighbourlink.local';
-const FIXED_ADMIN_PASSWORD = 'admin12345';
+const ACCOUNT_PREFS_KEY_PREFIX = 'neighbourlink.account.prefs.';
 
 const PAGE_SIZE = 3;
-const ADMIN_PAGE_SIZE_OPTIONS = [5, 8, 12, 20];
-const ADMIN_DEFAULT_PAGE_SIZE = 8;
 const DEFAULT_MAP_CENTER = { latitude: -33.8688, longitude: 151.2093 };
 const mapInstances = new Map();
 
@@ -45,10 +41,9 @@ const state = {
   },
   findFlow: createDefaultFindFlow(),
   postFlow: createDefaultPostFlow(),
-  profile: createDefaultProfileState(),
+  account: createDefaultAccountState(),
   myTrips: createDefaultMyTrips(),
   driverHub: createDefaultDriverHub(),
-  admin: createDefaultAdmin(),
   flash: {},
 };
 
@@ -147,22 +142,9 @@ function createDefaultPostFlow() {
   };
 }
 
-function createDefaultProfileState() {
+function createDefaultAccountState() {
   return {
-    loaded: false,
-    loading: false,
-    saving: false,
-    error: '',
-    message: '',
-    data: null,
-    form: {
-      fullName: '',
-      phone: '',
-      suburb: '',
-      bio: '',
-      travelPreferences: '',
-      trustNotes: '',
-    },
+    securitySubmitting: false,
     prefsLoadedForUserId: null,
     paymentMethods: [],
     paymentError: '',
@@ -213,62 +195,8 @@ function createDefaultDriverHub() {
     pendingJoinRequests: [],
     openRideRequests: [],
     driverOfferHistory: [],
-    driverRideOffers: [],
-    rideOfferForm: {
-      origin: 'Clayton',
-      originAddress: 'Clayton Railway Station',
-      originSuburb: 'Clayton',
-      destination: 'Melbourne',
-      destinationAddress: 'Melbourne CBD',
-      destinationSuburb: 'Melbourne',
-      departureDate: todayPlus(1),
-      departureTime: '08:30',
-      availableSeats: '2',
-    },
-    rideOfferSubmitting: false,
-    rideOfferError: '',
-    rideOfferMessage: '',
     joinForms: {},
     oneOffOfferForms: {},
-  };
-}
-
-function createDefaultAdminSection() {
-  return {
-    search: '',
-    page: 1,
-    pageSize: ADMIN_DEFAULT_PAGE_SIZE,
-    selected: {},
-    bulkValue: '',
-  };
-}
-
-function createDefaultAdmin() {
-  return {
-    loaded: false,
-    loading: false,
-    error: '',
-    message: '',
-    tab: 'users',
-    data: {
-      overview: null,
-      users: [],
-      offers: [],
-      requests: [],
-      requestOffers: [],
-      joins: [],
-      matches: [],
-      ratings: [],
-    },
-    sections: {
-      users: createDefaultAdminSection(),
-      offers: createDefaultAdminSection(),
-      requests: createDefaultAdminSection(),
-      requestOffers: createDefaultAdminSection(),
-      joins: createDefaultAdminSection(),
-      matches: createDefaultAdminSection(),
-      ratings: createDefaultAdminSection(),
-    },
   };
 }
 
@@ -289,15 +217,14 @@ function saveSession(session) {
     window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   } else {
     window.localStorage.removeItem(SESSION_KEY);
-    state.profile = createDefaultProfileState();
+    state.account = createDefaultAccountState();
     state.myTrips = createDefaultMyTrips();
     state.driverHub = createDefaultDriverHub();
-    state.admin = createDefaultAdmin();
   }
 }
 
-function profilePrefsStorageKey(userId) {
-  return `${PROFILE_PREFS_KEY_PREFIX}${userId}`;
+function accountPrefsStorageKey(userId) {
+  return `${ACCOUNT_PREFS_KEY_PREFIX}${userId}`;
 }
 
 function sanitizePaymentMethods(value) {
@@ -313,9 +240,9 @@ function sanitizePaymentMethods(value) {
     .filter((item) => item.last4.length === 4 && item.expiry.length >= 4);
 }
 
-function readProfilePrefs(userId) {
+function readAccountPrefs(userId) {
   try {
-    const key = profilePrefsStorageKey(userId);
+    const key = accountPrefsStorageKey(userId);
     const raw = window.localStorage.getItem(key);
     if (!raw) return { paymentMethods: [] };
     const parsed = JSON.parse(raw);
@@ -326,24 +253,24 @@ function readProfilePrefs(userId) {
   }
 }
 
-function writeProfilePrefs(userId, paymentMethods) {
-  const key = profilePrefsStorageKey(userId);
+function writeAccountPrefs(userId, paymentMethods) {
+  const key = accountPrefsStorageKey(userId);
   const payload = {
     paymentMethods: sanitizePaymentMethods(paymentMethods),
   };
   window.localStorage.setItem(key, JSON.stringify(payload));
 }
 
-function ensureProfilePrefsLoaded(userId) {
-  const profile = state.profile;
-  if (profile.prefsLoadedForUserId === userId) return;
-  const prefs = readProfilePrefs(userId);
-  profile.paymentMethods = prefs.paymentMethods;
-  profile.paymentError = '';
-  profile.paymentMessage = '';
-  profile.securityError = '';
-  profile.securityMessage = '';
-  profile.prefsLoadedForUserId = userId;
+function ensureAccountPrefsLoaded(userId) {
+  const account = state.account;
+  if (account.prefsLoadedForUserId === userId) return;
+  const prefs = readAccountPrefs(userId);
+  account.paymentMethods = prefs.paymentMethods;
+  account.paymentError = '';
+  account.paymentMessage = '';
+  account.securityError = '';
+  account.securityMessage = '';
+  account.prefsLoadedForUserId = userId;
 }
 
 function esc(value) {
@@ -547,7 +474,7 @@ function match(pathname, pattern) {
 }
 
 function requireUser() {
-  if (!state.session?.userId || state.session.role === 'ADMIN') {
+  if (!state.session?.userId) {
     navigate('/login', true);
     return null;
   }
@@ -562,14 +489,6 @@ function requireRole(role) {
     return null;
   }
   return session;
-}
-
-function requireAdmin() {
-  if (!state.session?.userId || state.session.role !== 'ADMIN') {
-    navigate('/admin/login', true);
-    return null;
-  }
-  return state.session;
 }
 
 function wireCommon() {
@@ -590,7 +509,7 @@ function wireCommon() {
 }
 
 function publicLayout(title, subtitle, html) {
-  const home = state.session?.role === 'ADMIN' ? '/admin' : '/';
+  const home = '/';
   teardownMaps();
   APP_ROOT.innerHTML = `
     <div class="intro-shell intro-shell-rich">
@@ -636,7 +555,7 @@ function userLayout(title, html) {
             <nav class="app-nav ${state.menuOpen ? 'is-open' : ''}">
               <a class="nav-link" href="/" data-nav="1">Find a Ride</a>
               <a class="nav-link" href="/my-trips" data-nav="1">My Trips</a>
-              <a class="nav-link" href="/profile" data-nav="1">Profile</a>
+              <a class="nav-link" href="/account" data-nav="1">Account</a>
               ${session?.role === 'DRIVER' ? '<a class="nav-link" href="/driver-hub" data-nav="1">Driver Hub</a>' : ''}
               <button class="btn btn-secondary nav-btn" data-action="logout" type="button">Log Out</button>
             </nav>
@@ -645,25 +564,6 @@ function userLayout(title, html) {
         <p class="nav-user">Signed in as <strong>${esc(session?.fullName || '')}</strong> (${esc(session?.role || '')})</p>
       </header>
       <main class="page-content"><div class="page-stack"><header><h2>${esc(title)}</h2></header>${html}</div></main>
-    </div>
-  `;
-  wireCommon();
-}
-
-function adminLayout(html) {
-  teardownMaps();
-  APP_ROOT.innerHTML = `
-    <div class="admin-shell">
-      <header class="admin-topbar">
-        <div>
-          <h1>Admin Control Panel</h1>
-          <p class="admin-subtitle">Fixed-account governance dashboard</p>
-        </div>
-        <div class="form-actions admin-top-actions">
-          <button class="btn" data-action="logout" type="button">Log Out</button>
-        </div>
-      </header>
-      <main class="admin-content">${html}</main>
     </div>
   `;
   wireCommon();
@@ -858,7 +758,7 @@ const tutorialTracks = {
     ],
     quiz: [
       { id: 'r1', q: 'When does flow submit?', options: ['After Destination', 'Only after final Confirm'], answer: 1 },
-      { id: 'r2', q: 'Where to track join outcomes?', options: ['My Join Request History', 'Profile'], answer: 0 },
+      { id: 'r2', q: 'Where to track join outcomes?', options: ['My Join Request History', 'Account Settings'], answer: 0 },
     ],
   },
   DRIVER: {
@@ -867,7 +767,7 @@ const tutorialTracks = {
     checklist: [
       'I can decide pending joins with meeting point on accept.',
       'I can respond to one-off requests without duplicate pending offers.',
-      'I can post ride offers within spare seat capacity.',
+      'I can review pending join requests and submit driver decisions.',
       'I can track outcomes in My Trips.',
     ],
     guided: [
@@ -1105,7 +1005,7 @@ function renderTutorial() {
 
 function renderLogin() {
   if (state.session?.userId) {
-    navigate(state.session.role === 'ADMIN' ? '/admin' : '/', true);
+    navigate('/', true);
     return;
   }
 
@@ -1138,7 +1038,7 @@ function renderLogin() {
       });
       saveSession(response);
       state.menuOpen = false;
-      navigate(response.role === 'ADMIN' ? '/admin' : '/', true);
+      navigate('/', true);
     } catch (error) {
       errorNode.textContent = error.message || 'Unable to sign in.';
       errorNode.style.display = 'block';
@@ -1149,7 +1049,7 @@ function renderLogin() {
 
 function renderRegister() {
   if (state.session?.userId) {
-    navigate(state.session.role === 'ADMIN' ? '/admin' : '/', true);
+    navigate('/', true);
     return;
   }
 
@@ -1221,49 +1121,6 @@ function renderRegister() {
       navigate('/', true);
     } catch (error) {
       errorNode.textContent = error.message || 'Unable to register.';
-      errorNode.style.display = 'block';
-      restore();
-    }
-  });
-}
-
-function renderAdminLogin() {
-  if (state.session?.role === 'ADMIN') {
-    navigate('/admin', true);
-    return;
-  }
-
-  publicLayout('Admin Login', 'Fixed admin account only. Admin cannot register.', `
-    <section class="auth-shell"><div class="auth-card">
-      <p class="auth-hint">Fixed credentials: ${esc(FIXED_ADMIN_EMAIL)} / ${esc(FIXED_ADMIN_PASSWORD)}</p>
-      <form class="form-grid" id="admin-login-form">
-        <label>Email<input type="email" name="email" value="${esc(FIXED_ADMIN_EMAIL)}" required></label>
-        <label>Password<input type="password" name="password" value="${esc(FIXED_ADMIN_PASSWORD)}" required></label>
-        <p id="admin-login-error" class="status-error" style="display:none;"></p>
-        <div class="form-actions"><button class="btn" type="submit">Open Admin Dashboard</button></div>
-      </form>
-    </div></section>
-  `);
-
-  const form = APP_ROOT.querySelector('#admin-login-form');
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const errorNode = APP_ROOT.querySelector('#admin-login-error');
-    errorNode.style.display = 'none';
-    const data = new FormData(form);
-    const button = form.querySelector('button[type="submit"]');
-    const restore = withLoadingButton(button, 'Signing in...');
-    try {
-      const response = await api.login({
-        email: normalizeText(data.get('email')),
-        password: String(data.get('password') || ''),
-      });
-      if (response.role !== 'ADMIN') throw new Error('This portal only accepts admin credentials.');
-      saveSession(response);
-      state.admin = createDefaultAdmin();
-      navigate('/admin', true);
-    } catch (error) {
-      errorNode.textContent = error.message || 'Unable to sign in.';
       errorNode.style.display = 'block';
       restore();
     }
@@ -1830,11 +1687,7 @@ async function renderRideOfferDetails(token, offerId) {
           <h2>${esc(detail.driver?.driverName || '-')}</h2>
           <div class="search-summary-facts detail-fact-grid">
             <span class="summary-fact-chip"><strong>Rating</strong>${detail.driver?.averageRating != null ? `${Number(detail.driver.averageRating).toFixed(1)} (${detail.driver?.ratingCount || 0} ratings)` : 'No ratings yet'}</span>
-            <span class="summary-fact-chip"><strong>Preferences</strong>${esc(detail.driver?.travelPreferences || 'Not provided')}</span>
-          </div>
-          <div class="trust-panel trust-panel-rich">
-            <p><strong>Trust notes</strong>${esc(detail.driver?.trustNotes || 'Not provided')}</p>
-            <p><strong>Bio</strong>${esc(detail.driver?.bio || 'Not provided')}</p>
+            <span class="summary-fact-chip"><strong>Trust signal</strong>${detail.driver?.averageRating != null ? 'Rated driver' : 'New driver'}</span>
           </div>
         </section>
         <section class="section-card detail-info-card">
@@ -2163,9 +2016,7 @@ async function renderRideRequestOffers(token, rideRequestId) {
             <div class="trust-panel">
               <p><strong>Driver trust summary</strong></p>
               <p><strong>Rating:</strong> ${offer.driver?.averageRating != null ? `${Number(offer.driver.averageRating).toFixed(1)} (${offer.driver?.ratingCount || 0} ratings)` : 'No ratings yet'}</p>
-              <p><strong>Travel preferences:</strong> ${esc(offer.driver?.travelPreferences || 'Not provided')}</p>
-              <p><strong>Trust notes:</strong> ${esc(offer.driver?.trustNotes || 'Not provided')}</p>
-              <p><strong>Bio:</strong> ${esc(offer.driver?.bio || 'Not provided')}</p>
+              <p><strong>Trust signal:</strong> ${offer.driver?.averageRating != null ? 'Rated driver' : 'New driver'}</p>
             </div>
             <div class="form-actions">
               ${offer.status === 'PENDING'
@@ -2300,46 +2151,16 @@ function renderPaymentPage() {
   });
 }
 
-async function ensureProfileLoaded(token, userId) {
-  const profile = state.profile;
-  if (profile.loading || profile.loaded) return;
-  profile.loading = true;
-  profile.error = '';
-  try {
-    const data = await api.getProfile(userId);
-    if (token !== renderToken) return;
-    profile.data = data;
-    profile.form = {
-      fullName: data.fullName || '',
-      phone: data.phone || '',
-      suburb: data.suburb || '',
-      bio: data.bio || '',
-      travelPreferences: data.travelPreferences || '',
-      trustNotes: data.trustNotes || '',
-    };
-    profile.loaded = true;
-  } catch (error) {
-    if (token !== renderToken) return;
-    profile.error = error.message || 'Unable to load profile.';
-  } finally {
-    if (token === renderToken) {
-      profile.loading = false;
-      renderApp();
-    }
-  }
-}
-
-async function renderProfile(token) {
+async function renderAccount() {
   const session = requireUser();
   if (!session) return;
-  ensureProfileLoaded(token, session.userId);
-  ensureProfilePrefsLoaded(session.userId);
-  const profile = state.profile;
-  const paymentCards = profile.paymentMethods.length === 0
+  ensureAccountPrefsLoaded(session.userId);
+  const account = state.account;
+  const paymentCards = account.paymentMethods.length === 0
     ? '<p>No payment methods saved yet.</p>'
     : `
       <div class="results-grid">
-        ${profile.paymentMethods.map((item) => `
+        ${account.paymentMethods.map((item) => `
           <article class="result-card">
             <p><strong>${esc(item.cardType)}</strong>${item.primary ? ' (Default)' : ''}</p>
             <p><strong>Card:</strong> **** **** **** ${esc(item.last4)}</p>
@@ -2352,94 +2173,93 @@ async function renderProfile(token) {
       </div>
     `;
 
-  userLayout('Profile', `
-    ${profile.loading ? '<p>Loading profile...</p>' : ''}
-    ${profile.error ? `<p class="status-error">${esc(profile.error)}</p>` : ''}
-    ${profile.data ? `
-      <section class="section-card">
-        <h2>Account and Security</h2>
-        <p><strong>Email:</strong> ${esc(profile.data.email || '-')}</p>
-        <p><strong>Account role:</strong> ${esc(session.role || '-')}</p>
-        <p><strong>Average rating:</strong> ${profile.data.averageRating != null ? Number(profile.data.averageRating).toFixed(1) : 'No ratings yet'} (${esc(profile.data.ratingCount || 0)} reviews)</p>
-        <form id="security-form" class="form-grid compact-form">
-          <label>Current password<input type="password" name="currentPassword" autocomplete="current-password"></label>
-          <label>New password<input type="password" name="newPassword" autocomplete="new-password"></label>
-          <label>Confirm new password<input type="password" name="confirmPassword" autocomplete="new-password"></label>
-          ${profile.securityError ? `<p class="status-error">${esc(profile.securityError)}</p>` : ''}
-          ${profile.securityMessage ? `<p class="status-success">${esc(profile.securityMessage)}</p>` : ''}
-          <div class="form-actions"><button class="btn" type="submit">Reset Password (Demo)</button></div>
-        </form>
-      </section>
-      <section class="section-card">
-        <h2>Payment Methods</h2>
-        <p class="status-note">Basic payment setup for demo checkout pages.</p>
-        ${profile.paymentError ? `<p class="status-error">${esc(profile.paymentError)}</p>` : ''}
-        ${profile.paymentMessage ? `<p class="status-success">${esc(profile.paymentMessage)}</p>` : ''}
-        ${paymentCards}
-        <form id="payment-method-form" class="form-grid compact-form">
-          <label>
-            Card type
-            <select name="cardType">
-              <option value="Visa">Visa</option>
-              <option value="Mastercard">Mastercard</option>
-              <option value="Amex">Amex</option>
-            </select>
-          </label>
-          <label>Card last 4 digits<input type="text" name="last4" inputmode="numeric" maxlength="4" placeholder="4242"></label>
-          <label>Expiry (MM/YY)<input type="text" name="expiry" maxlength="5" placeholder="12/29"></label>
-          <label>
-            Set as default
-            <select name="primary">
-              <option value="NO">No</option>
-              <option value="YES">Yes</option>
-            </select>
-          </label>
-          <div class="form-actions"><button class="btn" type="submit">Save Payment Method</button></div>
-        </form>
-      </section>
-      <section class="section-card">
-        <h2>Edit Basic Profile</h2>
-        <form id="profile-form" class="form-grid">
-          <label>Full name<input type="text" name="fullName" value="${esc(profile.form.fullName)}" ${profile.saving ? 'disabled' : ''}></label>
-          <label>Phone<input type="text" name="phone" value="${esc(profile.form.phone)}" ${profile.saving ? 'disabled' : ''}></label>
-          <label>Suburb<input type="text" name="suburb" value="${esc(profile.form.suburb)}" ${profile.saving ? 'disabled' : ''}></label>
-          ${profile.message ? `<p class="status-success">${esc(profile.message)}</p>` : ''}
-          <div class="form-actions"><button class="btn" type="submit">${profile.saving ? 'Saving...' : 'Save Basic Profile'}</button></div>
-        </form>
-      </section>
-    ` : ''}
+  userLayout('Account Settings', `
+    <section class="section-card">
+      <h2>Reset Password</h2>
+      <p class="status-note">Update your account password securely.</p>
+      <form id="security-form" class="form-grid compact-form">
+        <label>Current password<input type="password" name="currentPassword" autocomplete="current-password"></label>
+        <label>New password<input type="password" name="newPassword" autocomplete="new-password"></label>
+        <label>Confirm new password<input type="password" name="confirmPassword" autocomplete="new-password"></label>
+        ${account.securityError ? `<p class="status-error">${esc(account.securityError)}</p>` : ''}
+        ${account.securityMessage ? `<p class="status-success">${esc(account.securityMessage)}</p>` : ''}
+        <div class="form-actions">
+          <button class="btn" type="submit" ${account.securitySubmitting ? 'disabled' : ''}>
+            ${account.securitySubmitting ? 'Updating...' : 'Reset Password'}
+          </button>
+        </div>
+      </form>
+    </section>
+    <section class="section-card">
+      <h2>Payment Methods</h2>
+      <p class="status-note">Basic payment setup for demo checkout pages.</p>
+      ${account.paymentError ? `<p class="status-error">${esc(account.paymentError)}</p>` : ''}
+      ${account.paymentMessage ? `<p class="status-success">${esc(account.paymentMessage)}</p>` : ''}
+      ${paymentCards}
+      <form id="payment-method-form" class="form-grid compact-form">
+        <label>
+          Card type
+          <select name="cardType">
+            <option value="Visa">Visa</option>
+            <option value="Mastercard">Mastercard</option>
+            <option value="Amex">Amex</option>
+          </select>
+        </label>
+        <label>Card last 4 digits<input type="text" name="last4" inputmode="numeric" maxlength="4" placeholder="4242"></label>
+        <label>Expiry (MM/YY)<input type="text" name="expiry" maxlength="5" placeholder="12/29"></label>
+        <label>
+          Set as default
+          <select name="primary">
+            <option value="NO">No</option>
+            <option value="YES">Yes</option>
+          </select>
+        </label>
+        <div class="form-actions"><button class="btn" type="submit">Save Payment Method</button></div>
+      </form>
+    </section>
   `);
 
-  const form = APP_ROOT.querySelector('#profile-form');
   const paymentForm = APP_ROOT.querySelector('#payment-method-form');
   const securityForm = APP_ROOT.querySelector('#security-form');
-  if (!form) return;
 
   if (securityForm) {
-    securityForm.addEventListener('submit', (event) => {
+    securityForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      profile.securityError = '';
-      profile.securityMessage = '';
+      if (account.securitySubmitting) return;
+      account.securityError = '';
+      account.securityMessage = '';
       const data = new FormData(securityForm);
       const currentPassword = String(data.get('currentPassword') || '');
       const newPassword = String(data.get('newPassword') || '');
       const confirmPassword = String(data.get('confirmPassword') || '');
       if (!currentPassword || !newPassword || !confirmPassword) {
-        profile.securityError = 'Please fill all password fields.';
+        account.securityError = 'Please fill all password fields.';
         renderApp();
         return;
       }
       if (newPassword.length < 8) {
-        profile.securityError = 'New password must be at least 8 characters.';
+        account.securityError = 'New password must be at least 8 characters.';
         renderApp();
         return;
       }
       if (newPassword !== confirmPassword) {
-        profile.securityError = 'New password and confirm password do not match.';
+        account.securityError = 'New password and confirm password do not match.';
         renderApp();
         return;
       }
-      profile.securityMessage = 'Password reset request recorded (demo mode).';
+      account.securitySubmitting = true;
+      renderApp();
+      try {
+        const result = await api.resetPassword(session.userId, {
+          currentPassword,
+          newPassword,
+        });
+        account.securityMessage = result?.message || 'Password reset successful.';
+      } catch (error) {
+        account.securityError = error.message || 'Unable to reset password.';
+      } finally {
+        account.securitySubmitting = false;
+      }
       renderApp();
     });
   }
@@ -2447,20 +2267,20 @@ async function renderProfile(token) {
   if (paymentForm) {
     paymentForm.addEventListener('submit', (event) => {
       event.preventDefault();
-      profile.paymentError = '';
-      profile.paymentMessage = '';
+      account.paymentError = '';
+      account.paymentMessage = '';
       const data = new FormData(paymentForm);
       const cardType = normalizeText(data.get('cardType') || 'Visa');
       const last4 = normalizeText(data.get('last4') || '').replace(/\D/g, '');
       const expiry = normalizeText(data.get('expiry') || '');
       const primary = normalizeText(data.get('primary') || 'NO') === 'YES';
       if (last4.length !== 4) {
-        profile.paymentError = 'Card last 4 digits must be exactly 4 numbers.';
+        account.paymentError = 'Card last 4 digits must be exactly 4 numbers.';
         renderApp();
         return;
       }
       if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry)) {
-        profile.paymentError = 'Expiry format must be MM/YY.';
+        account.paymentError = 'Expiry format must be MM/YY.';
         renderApp();
         return;
       }
@@ -2471,7 +2291,7 @@ async function renderProfile(token) {
         expiry,
         primary,
       };
-      let nextMethods = [...profile.paymentMethods];
+      let nextMethods = [...account.paymentMethods];
       if (primary) {
         nextMethods = nextMethods.map((item) => ({ ...item, primary: false }));
       }
@@ -2479,9 +2299,9 @@ async function renderProfile(token) {
         created.primary = true;
       }
       nextMethods.unshift(created);
-      profile.paymentMethods = sanitizePaymentMethods(nextMethods);
-      writeProfilePrefs(session.userId, profile.paymentMethods);
-      profile.paymentMessage = `${cardType} ending ${last4} saved.`;
+      account.paymentMethods = sanitizePaymentMethods(nextMethods);
+      writeAccountPrefs(session.userId, account.paymentMethods);
+      account.paymentMessage = `${cardType} ending ${last4} saved.`;
       renderApp();
     });
   }
@@ -2489,62 +2309,17 @@ async function renderProfile(token) {
   APP_ROOT.querySelectorAll('[data-action="remove-payment"]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = normalizeText(btn.dataset.paymentId);
-      profile.paymentError = '';
-      profile.paymentMessage = '';
-      const current = profile.paymentMethods.filter((item) => item.id !== id);
+      account.paymentError = '';
+      account.paymentMessage = '';
+      const current = account.paymentMethods.filter((item) => item.id !== id);
       if (current.length > 0 && !current.some((item) => item.primary)) {
         current[0] = { ...current[0], primary: true };
       }
-      profile.paymentMethods = current;
-      writeProfilePrefs(session.userId, profile.paymentMethods);
-      profile.paymentMessage = 'Payment method removed.';
+      account.paymentMethods = current;
+      writeAccountPrefs(session.userId, account.paymentMethods);
+      account.paymentMessage = 'Payment method removed.';
       renderApp();
     });
-  });
-
-  form.addEventListener('input', () => {
-    const data = new FormData(form);
-    profile.form = {
-      fullName: String(data.get('fullName') || ''),
-      phone: String(data.get('phone') || ''),
-      suburb: String(data.get('suburb') || ''),
-      bio: profile.form.bio,
-      travelPreferences: profile.form.travelPreferences,
-      trustNotes: profile.form.trustNotes,
-    };
-  });
-
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    profile.error = '';
-    profile.message = '';
-    profile.saving = true;
-    renderApp();
-    try {
-      const updated = await api.updateProfile(session.userId, {
-        fullName: profile.form.fullName,
-        phone: profile.form.phone,
-        suburb: profile.form.suburb,
-        bio: profile.form.bio,
-        travelPreferences: profile.form.travelPreferences,
-        trustNotes: profile.form.trustNotes,
-      });
-      profile.data = updated;
-      profile.form = {
-        fullName: updated.fullName || '',
-        phone: updated.phone || '',
-        suburb: updated.suburb || '',
-        bio: updated.bio || '',
-        travelPreferences: updated.travelPreferences || '',
-        trustNotes: updated.trustNotes || '',
-      };
-      profile.message = 'Profile updated successfully.';
-    } catch (error) {
-      profile.error = error.message || 'Unable to save profile.';
-    } finally {
-      profile.saving = false;
-      renderApp();
-    }
   });
 }
 
@@ -2592,17 +2367,15 @@ async function ensureDriverHubLoaded(token, driverId) {
   hub.loading = true;
   hub.error = '';
   try {
-    const [pending, openRequests, offerHistory, rideOffers] = await Promise.all([
+    const [pending, openRequests, offerHistory] = await Promise.all([
       api.getPendingJoinRequests(driverId),
       api.listOpenRideRequests(),
       api.getDriverRideRequestOffers(driverId),
-      api.getDriverRideOffers(driverId),
     ]);
     if (token !== renderToken) return;
     hub.pendingJoinRequests = Array.isArray(pending) ? pending : [];
     hub.openRideRequests = Array.isArray(openRequests) ? openRequests : [];
     hub.driverOfferHistory = Array.isArray(offerHistory) ? offerHistory : [];
-    hub.driverRideOffers = Array.isArray(rideOffers) ? rideOffers : [];
     hub.loaded = true;
   } catch (error) {
     if (token !== renderToken) return;
@@ -2623,48 +2396,11 @@ async function renderDriverHub(token) {
   const hub = state.driverHub;
 
   userLayout('Driver Hub', `
-    <p>Manage rider join requests, post ride offers, and respond to open one-off requests.</p>
+    <p>Manage rider join requests and respond to open one-off requests.</p>
     ${hub.loading ? '<p>Loading dashboard data...</p>' : ''}
     ${hub.error ? `<p class="status-error">${esc(hub.error)}</p>` : ''}
 
     ${!hub.error ? `
-      <section class="section-card">
-        <h2>Post Ride Offer (Self-Service)</h2>
-        <form class="form-grid" id="driver-offer-form">
-          <div class="flow-summary-grid">
-            <label>Origin<input type="text" name="origin" value="${esc(hub.rideOfferForm.origin)}" ${hub.rideOfferSubmitting ? 'disabled' : ''}></label>
-            <label>Origin address<input type="text" name="originAddress" value="${esc(hub.rideOfferForm.originAddress)}" ${hub.rideOfferSubmitting ? 'disabled' : ''}></label>
-            <label>Origin suburb<input type="text" name="originSuburb" value="${esc(hub.rideOfferForm.originSuburb)}" ${hub.rideOfferSubmitting ? 'disabled' : ''}></label>
-            <label>Destination<input type="text" name="destination" value="${esc(hub.rideOfferForm.destination)}" ${hub.rideOfferSubmitting ? 'disabled' : ''}></label>
-            <label>Destination address<input type="text" name="destinationAddress" value="${esc(hub.rideOfferForm.destinationAddress)}" ${hub.rideOfferSubmitting ? 'disabled' : ''}></label>
-            <label>Destination suburb<input type="text" name="destinationSuburb" value="${esc(hub.rideOfferForm.destinationSuburb)}" ${hub.rideOfferSubmitting ? 'disabled' : ''}></label>
-            <label>Departure date<input type="date" name="departureDate" value="${esc(hub.rideOfferForm.departureDate)}" ${hub.rideOfferSubmitting ? 'disabled' : ''}></label>
-            <label>Departure time<input type="time" name="departureTime" value="${esc(hub.rideOfferForm.departureTime)}" ${hub.rideOfferSubmitting ? 'disabled' : ''}></label>
-            <label>Available seats<input type="number" min="1" name="availableSeats" value="${esc(hub.rideOfferForm.availableSeats)}" ${hub.rideOfferSubmitting ? 'disabled' : ''}></label>
-          </div>
-          ${hub.rideOfferError ? `<p class="status-error">${esc(hub.rideOfferError)}</p>` : ''}
-          ${hub.rideOfferMessage ? `<p class="status-success">${esc(hub.rideOfferMessage)}</p>` : ''}
-          <div class="form-actions"><button class="btn" type="submit" ${hub.rideOfferSubmitting ? 'disabled' : ''}>${hub.rideOfferSubmitting ? 'Publishing...' : 'Publish Ride Offer'}</button></div>
-        </form>
-      </section>
-
-      <section class="section-card">
-        <h2>My Posted Ride Offers</h2>
-        ${hub.driverRideOffers.length === 0 ? '<p>You have not posted ride offers yet.</p>' : `
-          <div class="results-grid">
-            ${hub.driverRideOffers.map((offer) => `
-              <article class="result-card">
-                <p><strong>Offer ID:</strong> ${esc(offer.offerId)}</p>
-                <p><strong>Route:</strong> ${esc(offer.originAddress || offer.origin)} to ${esc(offer.destinationAddress || offer.destination)}</p>
-                <p><strong>Departure:</strong> ${esc(offer.departureDate)} ${esc(offer.departureTime)}</p>
-                <p><strong>Seats:</strong> ${esc(offer.availableSeats)}</p>
-                <p><strong>Status:</strong> ${esc(offer.status)}</p>
-              </article>
-            `).join('')}
-          </div>
-        `}
-      </section>
-
       <section class="section-card">
         <h2>Pending Join Requests</h2>
         ${hub.pendingJoinRequests.length === 0 ? '<p>No pending join requests.</p>' : `
@@ -2762,88 +2498,6 @@ async function renderDriverHub(token) {
       </section>
     ` : ''}
   `);
-
-  const offerForm = APP_ROOT.querySelector('#driver-offer-form');
-  if (offerForm) {
-    offerForm.addEventListener('input', () => {
-      const data = new FormData(offerForm);
-      hub.rideOfferForm = {
-        origin: String(data.get('origin') || ''),
-        originAddress: String(data.get('originAddress') || ''),
-        originSuburb: String(data.get('originSuburb') || ''),
-        destination: String(data.get('destination') || ''),
-        destinationAddress: String(data.get('destinationAddress') || ''),
-        destinationSuburb: String(data.get('destinationSuburb') || ''),
-        departureDate: String(data.get('departureDate') || ''),
-        departureTime: String(data.get('departureTime') || ''),
-        availableSeats: String(data.get('availableSeats') || ''),
-      };
-    });
-
-    offerForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      hub.rideOfferError = '';
-      hub.rideOfferMessage = '';
-      const seats = Number(hub.rideOfferForm.availableSeats);
-      if (!normalizeText(hub.rideOfferForm.origin)) {
-        hub.rideOfferError = 'Origin is required.';
-        renderApp();
-        return;
-      }
-      if (!normalizeText(hub.rideOfferForm.destination)) {
-        hub.rideOfferError = 'Destination is required.';
-        renderApp();
-        return;
-      }
-      if (!normalizeText(hub.rideOfferForm.departureDate)) {
-        hub.rideOfferError = 'Departure date is required.';
-        renderApp();
-        return;
-      }
-      if (!normalizeText(hub.rideOfferForm.departureTime)) {
-        hub.rideOfferError = 'Departure time is required.';
-        renderApp();
-        return;
-      }
-      if (!Number.isInteger(seats) || seats < 1) {
-        hub.rideOfferError = 'Available seats must be at least 1.';
-        renderApp();
-        return;
-      }
-
-      hub.rideOfferSubmitting = true;
-      renderApp();
-      try {
-        const created = await api.createRideOffer({
-          driverId: session.userId,
-          origin: normalizeText(hub.rideOfferForm.origin),
-          originAddress: normalizeText(hub.rideOfferForm.originAddress) || normalizeText(hub.rideOfferForm.origin),
-          originState: 'VIC',
-          originSuburb: normalizeText(hub.rideOfferForm.originSuburb) || normalizeText(hub.rideOfferForm.origin),
-          originPostcode: null,
-          originLatitude: null,
-          originLongitude: null,
-          destination: normalizeText(hub.rideOfferForm.destination),
-          destinationAddress: normalizeText(hub.rideOfferForm.destinationAddress) || normalizeText(hub.rideOfferForm.destination),
-          destinationState: 'VIC',
-          destinationSuburb: normalizeText(hub.rideOfferForm.destinationSuburb) || normalizeText(hub.rideOfferForm.destination),
-          destinationPostcode: null,
-          destinationLatitude: null,
-          destinationLongitude: null,
-          departureDate: normalizeText(hub.rideOfferForm.departureDate),
-          departureTime: normalizeText(hub.rideOfferForm.departureTime),
-          availableSeats: seats,
-        });
-        hub.rideOfferMessage = `Ride offer #${created.offerId} posted successfully.`;
-        hub.loaded = false;
-      } catch (error) {
-        hub.rideOfferError = error.message || 'Unable to publish ride offer.';
-      } finally {
-        hub.rideOfferSubmitting = false;
-        renderApp();
-      }
-    });
-  }
 
   APP_ROOT.querySelectorAll('[data-join-field]').forEach((input) => {
     input.addEventListener('input', () => {
@@ -3625,661 +3279,8 @@ async function renderMyTrips(token) {
 
 }
 
-function getAdminSessionKey() {
-  return normalizeText(state.session?.adminSessionKey);
-}
-
-function adminTabConfig(tabKey) {
-  const configs = {
-    users: {
-      label: 'Users',
-      dataKey: 'users',
-      idField: 'userId',
-      searchValues: (item) => [item.userId, item.role, item.fullName, item.email, item.accountStatus, item.phone, item.suburb],
-      bulkField: 'accountStatus',
-      bulkOptions: ['ACTIVE', 'INACTIVE'],
-    },
-    offers: {
-      label: 'Ride Offers',
-      dataKey: 'offers',
-      idField: 'offerId',
-      searchValues: (item) => [item.offerId, item.driverId, item.driverName, item.origin, item.destination, item.status],
-      bulkField: 'status',
-      bulkOptions: ['OPEN', 'CLOSED'],
-    },
-    requests: {
-      label: 'Ride Requests',
-      dataKey: 'requests',
-      idField: 'rideRequestId',
-      searchValues: (item) => [item.rideRequestId, item.riderId, item.riderName, item.origin, item.destination, item.status],
-      bulkField: 'status',
-      bulkOptions: ['OPEN', 'MATCHED', 'CLOSED'],
-    },
-    requestOffers: {
-      label: 'Ride Request Offers',
-      dataKey: 'requestOffers',
-      idField: 'offerId',
-      searchValues: (item) => [item.offerId, item.rideRequestId, item.driverName, item.riderName, item.status],
-      bulkField: 'status',
-      bulkOptions: ['PENDING', 'ACCEPTED', 'REJECTED'],
-    },
-    joins: {
-      label: 'Join Requests',
-      dataKey: 'joins',
-      idField: 'joinRequestId',
-      searchValues: (item) => [item.joinRequestId, item.rideOfferId, item.riderName, item.status],
-      bulkField: 'status',
-      bulkOptions: ['PENDING', 'ACCEPTED', 'REJECTED'],
-    },
-    matches: {
-      label: 'Ride Matches',
-      dataKey: 'matches',
-      idField: 'rideMatchId',
-      searchValues: (item) => [item.rideMatchId, item.driverName, item.riderName, item.tripStatus],
-      bulkField: 'tripStatus',
-      bulkOptions: ['CONFIRMED', 'COMPLETED', 'CANCELLED'],
-    },
-    ratings: {
-      label: 'Ratings',
-      dataKey: 'ratings',
-      idField: 'ratingId',
-      searchValues: (item) => [item.ratingId, item.targetUserName, item.raterUserName, item.score, item.comment],
-      bulkField: null,
-      bulkOptions: [],
-    },
-  };
-  return configs[tabKey];
-}
-
-function filterAdminItems(items, search, valueGetter) {
-  const normalized = normalizeText(search).toLowerCase();
-  if (!normalized) return items;
-  return items.filter((item) => {
-    const haystack = valueGetter(item)
-      .filter((v) => v != null)
-      .map((v) => String(v).toLowerCase())
-      .join(' ');
-    return haystack.includes(normalized);
-  });
-}
-
-async function ensureAdminLoaded(token) {
-  const admin = state.admin;
-  if (admin.loading || admin.loaded) return;
-  admin.loading = true;
-  admin.error = '';
-  try {
-    const key = getAdminSessionKey();
-    const [overview, users, offers, requests, requestOffers, joins, matches, ratings] = await Promise.all([
-      api.getAdminOverview(key),
-      api.getAdminUsers(key),
-      api.getAdminRideOffers(key),
-      api.getAdminRideRequests(key),
-      api.getAdminRideRequestOffers(key),
-      api.getAdminJoinRequests(key),
-      api.getAdminRideMatches(key),
-      api.getAdminRatings(key),
-    ]);
-    if (token !== renderToken) return;
-    admin.data = {
-      overview,
-      users: Array.isArray(users) ? users : [],
-      offers: Array.isArray(offers) ? offers : [],
-      requests: Array.isArray(requests) ? requests : [],
-      requestOffers: Array.isArray(requestOffers) ? requestOffers : [],
-      joins: Array.isArray(joins) ? joins : [],
-      matches: Array.isArray(matches) ? matches : [],
-      ratings: Array.isArray(ratings) ? ratings : [],
-    };
-    admin.loaded = true;
-  } catch (error) {
-    if (token !== renderToken) return;
-    admin.error = error.message || 'Unable to load admin dashboard.';
-  } finally {
-    if (token === renderToken) {
-      admin.loading = false;
-      renderApp();
-    }
-  }
-}
-
-function renderAdminPagination(tabKey, paged, section) {
-  return `
-    <div class="admin-pager" data-admin-pager="${esc(tabKey)}">
-      <div class="admin-page-size">
-        <span>Page size</span>
-        <select data-action="admin-page-size" data-tab="${esc(tabKey)}">
-          ${ADMIN_PAGE_SIZE_OPTIONS.map((size) => `<option value="${size}" ${section.pageSize === size ? 'selected' : ''}>${size}</option>`).join('')}
-        </select>
-      </div>
-      <div class="admin-page-nav">
-        <button class="btn btn-secondary" type="button" data-action="admin-page-prev" data-tab="${esc(tabKey)}" ${paged.page <= 1 ? 'disabled' : ''}>Previous</button>
-        <span>Page ${paged.page} / ${paged.totalPages} (${paged.totalItems} items)</span>
-        <button class="btn btn-secondary" type="button" data-action="admin-page-next" data-tab="${esc(tabKey)}" ${paged.page >= paged.totalPages ? 'disabled' : ''}>Next</button>
-      </div>
-    </div>
-  `;
-}
-
-function renderAdminTable(tabKey, filtered, paged, section) {
-  if (tabKey === 'users') {
-    return `
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th><input type="checkbox" data-action="admin-select-page" data-tab="users" ${paged.list.length > 0 && paged.list.every((item) => section.selected[item.userId]) ? 'checked' : ''}></th>
-            <th>ID</th><th>Role</th><th>Name</th><th>Email</th><th>Status</th><th>Verification</th><th>Admin Edit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${paged.list.map((item) => `
-            <tr class="${section.selected[item.userId] ? 'is-selected' : ''}" data-row-id="${esc(item.userId)}">
-              <td><input type="checkbox" data-action="admin-select-row" data-tab="users" data-id="${esc(item.userId)}" ${section.selected[item.userId] ? 'checked' : ''}></td>
-              <td>${esc(item.userId)}</td>
-              <td>${esc(item.role)}</td>
-              <td>${esc(item.fullName || '-')}</td>
-              <td>${esc(item.email || '-')}</td>
-              <td>${esc(item.accountStatus || '-')}</td>
-              <td>${esc(item.driverLicenceVerifiedStatus || '-')}</td>
-              <td>
-                <details class="admin-inline-actions">
-                  <summary class="btn btn-secondary">Edit</summary>
-                  <div class="admin-inline-form">
-                    <input type="text" data-field="fullName" value="${esc(item.fullName || '')}" placeholder="Full name">
-                    <input type="email" data-field="email" value="${esc(item.email || '')}" placeholder="Email">
-                    <input type="text" data-field="phone" value="${esc(item.phone || '')}" placeholder="Phone">
-                    <input type="text" data-field="suburb" value="${esc(item.suburb || '')}" placeholder="Suburb">
-                    <select data-field="accountStatus">
-                      <option value="ACTIVE" ${item.accountStatus === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
-                      <option value="INACTIVE" ${item.accountStatus === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option>
-                    </select>
-                    <textarea data-field="bio" rows="2" placeholder="Bio">${esc(item.bio || '')}</textarea>
-                    <textarea data-field="travelPreferences" rows="2" placeholder="Travel preferences">${esc(item.travelPreferences || '')}</textarea>
-                    <textarea data-field="trustNotes" rows="2" placeholder="Trust notes">${esc(item.trustNotes || '')}</textarea>
-                    ${item.role === 'DRIVER' ? `
-                      <select data-field="driverLicenceVerifiedStatus">
-                        <option value="PENDING" ${item.driverLicenceVerifiedStatus === 'PENDING' ? 'selected' : ''}>PENDING</option>
-                        <option value="VERIFIED" ${item.driverLicenceVerifiedStatus === 'VERIFIED' ? 'selected' : ''}>VERIFIED</option>
-                        <option value="REJECTED" ${item.driverLicenceVerifiedStatus === 'REJECTED' ? 'selected' : ''}>REJECTED</option>
-                      </select>
-                      <input type="text" data-field="driverVehicleInfo" value="${esc(item.driverVehicleInfo || '')}" placeholder="Vehicle info">
-                      <input type="number" min="1" data-field="driverSpareSeatCapacity" value="${item.driverSpareSeatCapacity ?? ''}" placeholder="Spare seats">
-                      <textarea data-field="driverVerificationNotes" rows="2" placeholder="Verification notes">${esc(item.driverVerificationNotes || '')}</textarea>
-                      <div class="admin-doc-grid">
-                        <p>Documents:</p>
-                        <a href="${esc(`${api.API_BASE_URL}/driver-documents/${item.userId}/licence`)}" target="_blank" rel="noreferrer">Licence</a>
-                        <a href="${esc(`${api.API_BASE_URL}/driver-documents/${item.userId}/seat-proof`)}" target="_blank" rel="noreferrer">Seat Proof</a>
-                        <a href="${esc(`${api.API_BASE_URL}/driver-documents/${item.userId}/rego`)}" target="_blank" rel="noreferrer">Rego</a>
-                      </div>
-                    ` : `
-                      <input type="text" data-field="riderPreferredTravelTimes" value="${esc(item.riderPreferredTravelTimes || '')}" placeholder="Preferred travel times">
-                      <input type="text" data-field="riderUsualDestinations" value="${esc(item.riderUsualDestinations || '')}" placeholder="Usual destinations">
-                    `}
-                    <div class="admin-inline-toolbar"><button class="btn btn-secondary" type="button" data-action="admin-save-row" data-tab="users" data-id="${esc(item.userId)}">Save</button></div>
-                  </div>
-                </details>
-              </td>
-            </tr>
-          `).join('')}
-          ${filtered.length === 0 ? '<tr><td colspan="8">No users match current search.</td></tr>' : ''}
-        </tbody>
-      </table>
-    `;
-  }
-
-  if (tabKey === 'offers') {
-    return `
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th><input type="checkbox" data-action="admin-select-page" data-tab="offers" ${paged.list.length > 0 && paged.list.every((item) => section.selected[item.offerId]) ? 'checked' : ''}></th>
-            <th>ID</th><th>Driver</th><th>Route</th><th>Departure</th><th>Seats</th><th>Status</th><th>Admin Edit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${paged.list.map((item) => `
-            <tr class="${section.selected[item.offerId] ? 'is-selected' : ''}" data-row-id="${esc(item.offerId)}">
-              <td><input type="checkbox" data-action="admin-select-row" data-tab="offers" data-id="${esc(item.offerId)}" ${section.selected[item.offerId] ? 'checked' : ''}></td>
-              <td>${esc(item.offerId)}</td>
-              <td>${esc(item.driverName)} (#${esc(item.driverId)})</td>
-              <td>${esc(item.origin)} to ${esc(item.destination)}</td>
-              <td>${esc(item.departureDate)} ${esc(item.departureTime)}</td>
-              <td>${esc(item.availableSeats)}</td>
-              <td>${esc(item.status)}</td>
-              <td>
-                <div class="admin-inline-form">
-                  <input type="text" data-field="origin" value="${esc(item.origin || '')}" placeholder="Origin">
-                  <input type="text" data-field="destination" value="${esc(item.destination || '')}" placeholder="Destination">
-                  <input type="date" data-field="departureDate" value="${esc(item.departureDate || '')}">
-                  <input type="time" data-field="departureTime" value="${esc(item.departureTime || '')}">
-                  <input type="number" min="0" data-field="availableSeats" value="${item.availableSeats ?? ''}">
-                  <select data-field="status">
-                    <option value="OPEN" ${item.status === 'OPEN' ? 'selected' : ''}>OPEN</option>
-                    <option value="CLOSED" ${item.status === 'CLOSED' ? 'selected' : ''}>CLOSED</option>
-                  </select>
-                  <button class="btn btn-secondary" type="button" data-action="admin-save-row" data-tab="offers" data-id="${esc(item.offerId)}">Save</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-          ${filtered.length === 0 ? '<tr><td colspan="8">No ride offers match current search.</td></tr>' : ''}
-        </tbody>
-      </table>
-    `;
-  }
-
-  if (tabKey === 'requests') {
-    return `
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th><input type="checkbox" data-action="admin-select-page" data-tab="requests" ${paged.list.length > 0 && paged.list.every((item) => section.selected[item.rideRequestId]) ? 'checked' : ''}></th>
-            <th>ID</th><th>Rider</th><th>Route</th><th>Trip</th><th>Passengers</th><th>Status</th><th>Admin Edit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${paged.list.map((item) => `
-            <tr class="${section.selected[item.rideRequestId] ? 'is-selected' : ''}" data-row-id="${esc(item.rideRequestId)}">
-              <td><input type="checkbox" data-action="admin-select-row" data-tab="requests" data-id="${esc(item.rideRequestId)}" ${section.selected[item.rideRequestId] ? 'checked' : ''}></td>
-              <td>${esc(item.rideRequestId)}</td>
-              <td>${esc(item.riderName)} (#${esc(item.riderId)})</td>
-              <td>${esc(item.origin)} to ${esc(item.destination)}</td>
-              <td>${esc(item.tripDate)} ${esc(item.tripTime)}</td>
-              <td>${esc(item.passengerCount)}</td>
-              <td>${esc(item.status)}</td>
-              <td>
-                <div class="admin-inline-form">
-                  <input type="text" data-field="origin" value="${esc(item.origin || '')}" placeholder="Origin">
-                  <input type="text" data-field="destination" value="${esc(item.destination || '')}" placeholder="Destination">
-                  <input type="date" data-field="tripDate" value="${esc(item.tripDate || '')}">
-                  <input type="time" data-field="tripTime" value="${esc(item.tripTime || '')}">
-                  <input type="number" min="1" data-field="passengerCount" value="${item.passengerCount ?? ''}">
-                  <input type="text" data-field="notes" value="${esc(item.notes || '')}" placeholder="Notes">
-                  <select data-field="status">
-                    <option value="OPEN" ${item.status === 'OPEN' ? 'selected' : ''}>OPEN</option>
-                    <option value="MATCHED" ${item.status === 'MATCHED' ? 'selected' : ''}>MATCHED</option>
-                    <option value="CLOSED" ${item.status === 'CLOSED' ? 'selected' : ''}>CLOSED</option>
-                  </select>
-                  <button class="btn btn-secondary" type="button" data-action="admin-save-row" data-tab="requests" data-id="${esc(item.rideRequestId)}">Save</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-          ${filtered.length === 0 ? '<tr><td colspan="8">No ride requests match current search.</td></tr>' : ''}
-        </tbody>
-      </table>
-    `;
-  }
-
-  if (tabKey === 'requestOffers') {
-    return `
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th><input type="checkbox" data-action="admin-select-page" data-tab="requestOffers" ${paged.list.length > 0 && paged.list.every((item) => section.selected[item.offerId]) ? 'checked' : ''}></th>
-            <th>ID</th><th>Request</th><th>Driver</th><th>Rider</th><th>Status</th><th>Admin Edit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${paged.list.map((item) => `
-            <tr class="${section.selected[item.offerId] ? 'is-selected' : ''}" data-row-id="${esc(item.offerId)}">
-              <td><input type="checkbox" data-action="admin-select-row" data-tab="requestOffers" data-id="${esc(item.offerId)}" ${section.selected[item.offerId] ? 'checked' : ''}></td>
-              <td>${esc(item.offerId)}</td>
-              <td>#${esc(item.rideRequestId)}</td>
-              <td>${esc(item.driverName)} (#${esc(item.driverId)})</td>
-              <td>${esc(item.riderName)} (#${esc(item.riderId)})</td>
-              <td>${esc(item.status)}</td>
-              <td>
-                <div class="admin-inline-form">
-                  <input type="number" min="1" data-field="proposedSeats" value="${item.proposedSeats ?? ''}">
-                  <input type="text" data-field="meetingPoint" value="${esc(item.meetingPoint || '')}" placeholder="Meeting point">
-                  <select data-field="status">
-                    <option value="PENDING" ${item.status === 'PENDING' ? 'selected' : ''}>PENDING</option>
-                    <option value="ACCEPTED" ${item.status === 'ACCEPTED' ? 'selected' : ''}>ACCEPTED</option>
-                    <option value="REJECTED" ${item.status === 'REJECTED' ? 'selected' : ''}>REJECTED</option>
-                  </select>
-                  <button class="btn btn-secondary" type="button" data-action="admin-save-row" data-tab="requestOffers" data-id="${esc(item.offerId)}">Save</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-          ${filtered.length === 0 ? '<tr><td colspan="7">No request offers match current search.</td></tr>' : ''}
-        </tbody>
-      </table>
-    `;
-  }
-
-  if (tabKey === 'joins') {
-    return `
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th><input type="checkbox" data-action="admin-select-page" data-tab="joins" ${paged.list.length > 0 && paged.list.every((item) => section.selected[item.joinRequestId]) ? 'checked' : ''}></th>
-            <th>ID</th><th>Offer</th><th>Rider</th><th>Seats</th><th>Status</th><th>Admin Edit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${paged.list.map((item) => `
-            <tr class="${section.selected[item.joinRequestId] ? 'is-selected' : ''}" data-row-id="${esc(item.joinRequestId)}">
-              <td><input type="checkbox" data-action="admin-select-row" data-tab="joins" data-id="${esc(item.joinRequestId)}" ${section.selected[item.joinRequestId] ? 'checked' : ''}></td>
-              <td>${esc(item.joinRequestId)}</td>
-              <td>#${esc(item.rideOfferId)}</td>
-              <td>${esc(item.riderName)} (#${esc(item.riderId)})</td>
-              <td>${esc(item.requestedSeats)}</td>
-              <td>${esc(item.status)}</td>
-              <td>
-                <div class="admin-inline-form">
-                  <input type="number" min="1" data-field="requestedSeats" value="${item.requestedSeats ?? ''}">
-                  <select data-field="status">
-                    <option value="PENDING" ${item.status === 'PENDING' ? 'selected' : ''}>PENDING</option>
-                    <option value="ACCEPTED" ${item.status === 'ACCEPTED' ? 'selected' : ''}>ACCEPTED</option>
-                    <option value="REJECTED" ${item.status === 'REJECTED' ? 'selected' : ''}>REJECTED</option>
-                  </select>
-                  <button class="btn btn-secondary" type="button" data-action="admin-save-row" data-tab="joins" data-id="${esc(item.joinRequestId)}">Save</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-          ${filtered.length === 0 ? '<tr><td colspan="7">No join requests match current search.</td></tr>' : ''}
-        </tbody>
-      </table>
-    `;
-  }
-
-  if (tabKey === 'matches') {
-    return `
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th><input type="checkbox" data-action="admin-select-page" data-tab="matches" ${paged.list.length > 0 && paged.list.every((item) => section.selected[item.rideMatchId]) ? 'checked' : ''}></th>
-            <th>ID</th><th>Driver</th><th>Rider</th><th>Source</th><th>Status</th><th>Admin Edit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${paged.list.map((item) => `
-            <tr class="${section.selected[item.rideMatchId] ? 'is-selected' : ''}" data-row-id="${esc(item.rideMatchId)}">
-              <td><input type="checkbox" data-action="admin-select-row" data-tab="matches" data-id="${esc(item.rideMatchId)}" ${section.selected[item.rideMatchId] ? 'checked' : ''}></td>
-              <td>${esc(item.rideMatchId)}</td>
-              <td>${esc(item.driverName)} (#${esc(item.driverId)})</td>
-              <td>${esc(item.riderName)} (#${esc(item.riderId)})</td>
-              <td>Join #${esc(item.acceptedJoinRequestId || '-')} / OneOffOffer #${esc(item.acceptedRideRequestOfferId || '-')}</td>
-              <td>${esc(item.tripStatus)}</td>
-              <td>
-                <div class="admin-inline-form">
-                  <input type="text" data-field="meetingPoint" value="${esc(item.meetingPoint || '')}" placeholder="Meeting point">
-                  <select data-field="tripStatus">
-                    <option value="CONFIRMED" ${item.tripStatus === 'CONFIRMED' ? 'selected' : ''}>CONFIRMED</option>
-                    <option value="COMPLETED" ${item.tripStatus === 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
-                    <option value="CANCELLED" ${item.tripStatus === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
-                  </select>
-                  <button class="btn btn-secondary" type="button" data-action="admin-save-row" data-tab="matches" data-id="${esc(item.rideMatchId)}">Save</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-          ${filtered.length === 0 ? '<tr><td colspan="7">No ride matches match current search.</td></tr>' : ''}
-        </tbody>
-      </table>
-    `;
-  }
-
-  return `
-    <table class="admin-table">
-      <thead>
-        <tr><th>ID</th><th>Target User</th><th>Rater User</th><th>Score</th><th>Comment</th><th>Created Date</th><th>Admin Edit</th></tr>
-      </thead>
-      <tbody>
-        ${paged.list.map((item) => `
-          <tr data-row-id="${esc(item.ratingId)}">
-            <td>${esc(item.ratingId)}</td>
-            <td>${esc(item.targetUserName)} (#${esc(item.targetUserId)})</td>
-            <td>${esc(item.raterUserName)} (#${esc(item.raterUserId)})</td>
-            <td>${esc(item.score)}</td>
-            <td>${esc(item.comment || '-')}</td>
-            <td>${esc(item.createdDate || '-')}</td>
-            <td>
-              <div class="admin-inline-form">
-                <input type="number" min="1" data-field="raterUserId" value="${item.raterUserId ?? ''}">
-                <input type="number" min="1" max="5" data-field="score" value="${item.score ?? ''}">
-                <input type="text" data-field="comment" value="${esc(item.comment || '')}" placeholder="Comment">
-                <button class="btn btn-secondary" type="button" data-action="admin-save-row" data-tab="ratings" data-id="${esc(item.ratingId)}">Save</button>
-              </div>
-            </td>
-          </tr>
-        `).join('')}
-        ${filtered.length === 0 ? '<tr><td colspan="7">No ratings match current search.</td></tr>' : ''}
-      </tbody>
-    </table>
-  `;
-}
-
-function renderAdminTabSection(tabKey) {
-  const admin = state.admin;
-  const config = adminTabConfig(tabKey);
-  const section = admin.sections[tabKey];
-  const rawItems = admin.data[config.dataKey] || [];
-  const filtered = filterAdminItems(rawItems, section.search, config.searchValues);
-  const paged = paginateItems(filtered, section.page, section.pageSize);
-  section.page = paged.page;
-  const selectedCount = Object.keys(section.selected).filter((id) => section.selected[id]).length;
-
-  return `
-    <section class="section-card">
-      <div class="admin-filter-bar">
-        <input type="search" data-action="admin-search" data-tab="${esc(tabKey)}" placeholder="Search ${esc(config.label.toLowerCase())}..." value="${esc(section.search)}">
-        <span>${filtered.length}/${rawItems.length}</span>
-      </div>
-      ${config.bulkField ? `
-        <div class="admin-bulk-bar">
-          <span>${selectedCount} selected</span>
-          <select data-action="admin-bulk-value" data-tab="${esc(tabKey)}">
-            <option value="">Bulk ${esc(config.bulkField)}...</option>
-            ${config.bulkOptions.map((value) => `<option value="${esc(value)}" ${section.bulkValue === value ? 'selected' : ''}>${esc(value)}</option>`).join('')}
-          </select>
-          <button class="btn btn-secondary" type="button" data-action="admin-bulk-apply" data-tab="${esc(tabKey)}" ${selectedCount === 0 || !section.bulkValue ? 'disabled' : ''}>Apply</button>
-          <button class="btn btn-secondary" type="button" data-action="admin-clear-selection" data-tab="${esc(tabKey)}" ${selectedCount === 0 ? 'disabled' : ''}>Clear</button>
-        </div>
-      ` : ''}
-      <div class="admin-table-wrap">
-        ${renderAdminTable(tabKey, filtered, paged, section)}
-        ${renderAdminPagination(tabKey, paged, section)}
-      </div>
-    </section>
-  `;
-}
-
-async function renderAdmin(token) {
-  const session = requireAdmin();
-  if (!session) return;
-  ensureAdminLoaded(token);
-  const admin = state.admin;
-
-  adminLayout(`
-    ${admin.loading ? '<section class="section-card"><p>Loading admin dashboard...</p></section>' : ''}
-    ${admin.error ? `<section class="section-card"><p class="status-error">${esc(admin.error)}</p></section>` : ''}
-    ${admin.message ? `<section class="section-card"><p class="status-success">${esc(admin.message)}</p></section>` : ''}
-    ${!admin.error ? `
-      <section class="section-card">
-        <div class="admin-kpi-grid">
-          <article class="admin-kpi-card"><strong>${esc(admin.data.overview?.users ?? admin.data.users.length)}</strong><span>Users</span></article>
-          <article class="admin-kpi-card"><strong>${esc(admin.data.overview?.rideOffers ?? admin.data.offers.length)}</strong><span>Ride Offers</span></article>
-          <article class="admin-kpi-card"><strong>${esc(admin.data.overview?.rideRequests ?? admin.data.requests.length)}</strong><span>Ride Requests</span></article>
-          <article class="admin-kpi-card"><strong>${esc(admin.data.overview?.joinRequests ?? admin.data.joins.length)}</strong><span>Join Requests</span></article>
-          <article class="admin-kpi-card"><strong>${esc(admin.data.overview?.rideMatches ?? admin.data.matches.length)}</strong><span>Ride Matches</span></article>
-          <article class="admin-kpi-card"><strong>${esc(admin.data.overview?.ratings ?? admin.data.ratings.length)}</strong><span>Ratings</span></article>
-        </div>
-      </section>
-
-      <section class="section-card">
-        <div class="subtabs-chip-row">
-          ${['users', 'offers', 'requests', 'requestOffers', 'joins', 'matches', 'ratings']
-            .map((tab) => `<button class="story-chip ${admin.tab === tab ? 'active' : ''}" type="button" data-action="admin-tab" data-tab="${tab}">${esc(adminTabConfig(tab).label)}</button>`)
-            .join('')}
-        </div>
-      </section>
-
-      ${renderAdminTabSection(admin.tab)}
-    ` : ''}
-  `);
-
-  APP_ROOT.querySelectorAll('[data-action="admin-tab"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      admin.tab = btn.dataset.tab;
-      admin.error = '';
-      admin.message = '';
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-search"]').forEach((input) => {
-    input.addEventListener('input', () => {
-      const tab = input.dataset.tab;
-      admin.sections[tab].search = input.value;
-      admin.sections[tab].page = 1;
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-page-prev"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
-      admin.sections[tab].page -= 1;
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-page-next"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
-      admin.sections[tab].page += 1;
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-page-size"]').forEach((select) => {
-    select.addEventListener('change', () => {
-      const tab = select.dataset.tab;
-      admin.sections[tab].pageSize = Number(select.value) || ADMIN_DEFAULT_PAGE_SIZE;
-      admin.sections[tab].page = 1;
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-select-row"]').forEach((checkbox) => {
-    checkbox.addEventListener('change', () => {
-      const tab = checkbox.dataset.tab;
-      const id = checkbox.dataset.id;
-      admin.sections[tab].selected[id] = checkbox.checked;
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-select-page"]').forEach((checkbox) => {
-    checkbox.addEventListener('change', () => {
-      const tab = checkbox.dataset.tab;
-      const cfg = adminTabConfig(tab);
-      const section = admin.sections[tab];
-      const filtered = filterAdminItems(admin.data[cfg.dataKey] || [], section.search, cfg.searchValues);
-      const paged = paginateItems(filtered, section.page, section.pageSize);
-      paged.list.forEach((item) => {
-        section.selected[item[cfg.idField]] = checkbox.checked;
-      });
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-bulk-value"]').forEach((select) => {
-    select.addEventListener('change', () => {
-      const tab = select.dataset.tab;
-      admin.sections[tab].bulkValue = select.value;
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-clear-selection"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
-      admin.sections[tab].selected = {};
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-bulk-apply"]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const tab = btn.dataset.tab;
-      const cfg = adminTabConfig(tab);
-      const section = admin.sections[tab];
-      const ids = Object.keys(section.selected)
-        .filter((id) => section.selected[id])
-        .map((id) => Number(id))
-        .filter((id) => Number.isInteger(id) && id > 0);
-      if (ids.length === 0 || !section.bulkValue) return;
-
-      admin.message = '';
-      admin.error = '';
-      const restore = withLoadingButton(btn, 'Applying...');
-      const key = getAdminSessionKey();
-      try {
-        if (tab === 'users') await Promise.all(ids.map((id) => api.updateAdminUser(key, id, { accountStatus: section.bulkValue })));
-        if (tab === 'offers') await Promise.all(ids.map((id) => api.updateAdminRideOffer(key, id, { status: section.bulkValue })));
-        if (tab === 'requests') await Promise.all(ids.map((id) => api.updateAdminRideRequest(key, id, { status: section.bulkValue })));
-        if (tab === 'requestOffers') await Promise.all(ids.map((id) => api.updateAdminRideRequestOffer(key, id, { status: section.bulkValue })));
-        if (tab === 'joins') await Promise.all(ids.map((id) => api.updateAdminJoinRequest(key, id, { status: section.bulkValue })));
-        if (tab === 'matches') await Promise.all(ids.map((id) => api.updateAdminRideMatch(key, id, { tripStatus: section.bulkValue })));
-        admin.message = `Applied ${section.bulkValue} to ${ids.length} selected row(s).`;
-        section.selected = {};
-        section.bulkValue = '';
-        admin.loaded = false;
-      } catch (error) {
-        admin.error = error.message || 'Bulk update failed.';
-        restore();
-      }
-      renderApp();
-    });
-  });
-
-  APP_ROOT.querySelectorAll('[data-action="admin-save-row"]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const tab = btn.dataset.tab;
-      const id = Number(btn.dataset.id);
-      const row = btn.closest('tr');
-      if (!row || !Number.isInteger(id)) return;
-      const patch = {};
-      row.querySelectorAll('[data-field]').forEach((input) => {
-        const field = input.dataset.field;
-        if (input.type === 'number') {
-          const raw = normalizeText(input.value);
-          patch[field] = raw === '' ? null : Number(raw);
-        } else {
-          patch[field] = input.value;
-        }
-      });
-
-      admin.message = '';
-      admin.error = '';
-      const restore = withLoadingButton(btn, 'Saving...');
-      const key = getAdminSessionKey();
-      try {
-        if (tab === 'users') await api.updateAdminUser(key, id, patch);
-        else if (tab === 'offers') await api.updateAdminRideOffer(key, id, patch);
-        else if (tab === 'requests') await api.updateAdminRideRequest(key, id, patch);
-        else if (tab === 'requestOffers') await api.updateAdminRideRequestOffer(key, id, patch);
-        else if (tab === 'joins') await api.updateAdminJoinRequest(key, id, patch);
-        else if (tab === 'matches') await api.updateAdminRideMatch(key, id, patch);
-        else if (tab === 'ratings') await api.updateAdminRating(key, id, patch);
-        admin.message = `Saved ${adminTabConfig(tab).label} #${id}.`;
-        admin.loaded = false;
-      } catch (error) {
-        admin.error = error.message || 'Save failed.';
-        restore();
-      }
-      renderApp();
-    });
-  });
-}
-
 function renderNotFound() {
-  const fallback = state.session ? (state.session.role === 'ADMIN' ? '/admin' : '/') : '/login';
+  const fallback = state.session ? '/' : '/login';
   navigate(fallback, true);
 }
 
@@ -4295,8 +3296,6 @@ async function renderApp() {
   if (path === '/tutorial') return renderTutorial();
   if (path === '/login') return renderLogin();
   if (path === '/register') return renderRegister();
-  if (path === '/admin/login') return renderAdminLogin();
-  if (path === '/admin') return renderAdmin(token);
   if (path === '/post-ride-request') {
     navigate('/', true);
     return;
@@ -4305,7 +3304,7 @@ async function renderApp() {
   if (path === '/search-results') return renderSearchResults(token);
   if (path === '/my-trips') return renderMyTrips(token);
   if (path === '/payment') return renderPaymentPage();
-  if (path === '/profile') return renderProfile(token);
+  if (path === '/account') return renderAccount();
   if (path === '/driver-hub') return renderDriverHub(token);
   if (path === '/ride-confirmed') return renderRideConfirmed();
 
@@ -4328,3 +3327,4 @@ document.addEventListener('click', (event) => {
 
 window.addEventListener('popstate', renderApp);
 renderApp();
+

@@ -167,31 +167,6 @@ class UseCaseFlowIntegrationTest {
     }
 
     @Test
-    void driver_createRideOffer_shouldSucceedAndAppearInDriverList() throws Exception {
-        MvcResult createOfferResult = mockMvc.perform(post("/api/ride-offers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"driverId\":1,\"origin\":\"Clayton\",\"originAddress\":\"Clayton Station\",\"originSuburb\":\"Clayton\","
-                                + "\"originLatitude\":-37.9241,\"originLongitude\":145.1207,"
-                                + "\"destination\":\"Melbourne\",\"destinationAddress\":\"Melbourne CBD\",\"destinationSuburb\":\"Melbourne\","
-                                + "\"destinationLatitude\":-37.8136,\"destinationLongitude\":144.9631,"
-                                + "\"departureDate\":\"2026-04-12\",\"departureTime\":\"07:45\",\"availableSeats\":2}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.offerId").isNumber())
-                .andExpect(jsonPath("$.status").value("OPEN"))
-                .andReturn();
-
-        Long createdOfferId = extractLong(createOfferResult, "offerId");
-
-        mockMvc.perform(get("/api/drivers/1/ride-offers"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].offerId").value(createdOfferId))
-                .andExpect(jsonPath("$[0].origin").value("Clayton"))
-                .andExpect(jsonPath("$[0].destination").value("Melbourne"))
-                .andExpect(jsonPath("$[0].availableSeats").value(2))
-                .andExpect(jsonPath("$[0].status").value("OPEN"));
-    }
-
-    @Test
     void uc2_acceptJoinRequest_shouldCreateNotificationsForBothSides() throws Exception {
         MvcResult createJoinResult = mockMvc.perform(post("/api/join-requests")
                         .contentType(MediaType.APPLICATION_JSON)

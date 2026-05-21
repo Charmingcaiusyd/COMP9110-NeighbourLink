@@ -32,12 +32,11 @@ All auto-created requests redirect to `/my-trips` and are visible in rider histo
 - Purpose: display a simple credit-card template for demo interaction.
 - No backend payment processing is used.
 
-## 4) Profile Enhancements
-- Top navigation now includes `Profile` between `My Trips` and `Log Out`.
-- `Profile` page now shows:
-  - account email and role
-  - demo reset-password panel (frontend validation/feedback only)
-  - basic payment method management (add/remove/default)
+## 4) Account Settings
+- Top navigation includes `Account` between `My Trips` and `Log Out`.
+- `Account` page only keeps:
+  - reset-password panel (calls backend password reset API)
+  - payment method management (add/remove/default)
 - Payment method preferences are stored in browser `localStorage` per user.
 
 ## 5) Scope Clarification

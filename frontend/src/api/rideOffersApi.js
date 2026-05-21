@@ -46,20 +46,6 @@ function buildSearchParams(filters) {
   return params;
 }
 
-function buildAdminHeaders(adminSessionKey, includeJson = false) {
-  const normalizedKey = typeof adminSessionKey === 'string' ? adminSessionKey.trim() : '';
-  if (!normalizedKey) {
-    throw new Error('Admin session expired. Please sign in again.');
-  }
-  const headers = {
-    'X-Admin-Session': normalizedKey,
-  };
-  if (includeJson) {
-    headers['Content-Type'] = 'application/json';
-  }
-  return headers;
-}
-
 export async function searchRideOffers(filters) {
   const params = buildSearchParams(filters);
   const response = await fetch(`${API_BASE_URL}/ride-offers?${params.toString()}`);
@@ -71,28 +57,6 @@ export async function searchRideOffers(filters) {
 
 export async function getRideOfferDetail(offerId) {
   const response = await fetch(`${API_BASE_URL}/ride-offers/${offerId}`);
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function createRideOffer(requestBody) {
-  const response = await fetch(`${API_BASE_URL}/ride-offers`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function getDriverRideOffers(driverId) {
-  const response = await fetch(`${API_BASE_URL}/drivers/${driverId}/ride-offers`);
   if (!response.ok) {
     await throwApiError(response);
   }
@@ -251,170 +215,6 @@ export async function login(requestBody) {
   return response.json();
 }
 
-export async function getAdminOverview(adminSessionKey) {
-  const response = await fetch(`${API_BASE_URL}/admin/overview`, {
-    headers: buildAdminHeaders(adminSessionKey),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function getAdminUsers(adminSessionKey) {
-  const response = await fetch(`${API_BASE_URL}/admin/users`, {
-    headers: buildAdminHeaders(adminSessionKey),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function updateAdminUser(adminSessionKey, userId, requestBody) {
-  const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
-    method: 'PATCH',
-    headers: buildAdminHeaders(adminSessionKey, true),
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function getAdminRideOffers(adminSessionKey) {
-  const response = await fetch(`${API_BASE_URL}/admin/ride-offers`, {
-    headers: buildAdminHeaders(adminSessionKey),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function updateAdminRideOffer(adminSessionKey, offerId, requestBody) {
-  const response = await fetch(`${API_BASE_URL}/admin/ride-offers/${offerId}`, {
-    method: 'PATCH',
-    headers: buildAdminHeaders(adminSessionKey, true),
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function getAdminRideRequests(adminSessionKey) {
-  const response = await fetch(`${API_BASE_URL}/admin/ride-requests`, {
-    headers: buildAdminHeaders(adminSessionKey),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function updateAdminRideRequest(adminSessionKey, rideRequestId, requestBody) {
-  const response = await fetch(`${API_BASE_URL}/admin/ride-requests/${rideRequestId}`, {
-    method: 'PATCH',
-    headers: buildAdminHeaders(adminSessionKey, true),
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function getAdminRideRequestOffers(adminSessionKey) {
-  const response = await fetch(`${API_BASE_URL}/admin/ride-request-offers`, {
-    headers: buildAdminHeaders(adminSessionKey),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function updateAdminRideRequestOffer(adminSessionKey, offerId, requestBody) {
-  const response = await fetch(`${API_BASE_URL}/admin/ride-request-offers/${offerId}`, {
-    method: 'PATCH',
-    headers: buildAdminHeaders(adminSessionKey, true),
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function getAdminJoinRequests(adminSessionKey) {
-  const response = await fetch(`${API_BASE_URL}/admin/join-requests`, {
-    headers: buildAdminHeaders(adminSessionKey),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function updateAdminJoinRequest(adminSessionKey, joinRequestId, requestBody) {
-  const response = await fetch(`${API_BASE_URL}/admin/join-requests/${joinRequestId}`, {
-    method: 'PATCH',
-    headers: buildAdminHeaders(adminSessionKey, true),
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function getAdminRideMatches(adminSessionKey) {
-  const response = await fetch(`${API_BASE_URL}/admin/ride-matches`, {
-    headers: buildAdminHeaders(adminSessionKey),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function updateAdminRideMatch(adminSessionKey, rideMatchId, requestBody) {
-  const response = await fetch(`${API_BASE_URL}/admin/ride-matches/${rideMatchId}`, {
-    method: 'PATCH',
-    headers: buildAdminHeaders(adminSessionKey, true),
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function getAdminRatings(adminSessionKey) {
-  const response = await fetch(`${API_BASE_URL}/admin/ratings`, {
-    headers: buildAdminHeaders(adminSessionKey),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function updateAdminRating(adminSessionKey, ratingId, requestBody) {
-  const response = await fetch(`${API_BASE_URL}/admin/ratings/${ratingId}`, {
-    method: 'PATCH',
-    headers: buildAdminHeaders(adminSessionKey, true),
-    body: JSON.stringify(requestBody),
-  });
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
 export async function register(requestBody) {
   const isFormData = typeof FormData !== 'undefined' && requestBody instanceof FormData;
   const response = await fetch(`${API_BASE_URL}/auth/register`, isFormData
@@ -449,16 +249,8 @@ export async function socialLogin(requestBody) {
   return response.json();
 }
 
-export async function getProfile(userId) {
-  const response = await fetch(`${API_BASE_URL}/profiles/${userId}`);
-  if (!response.ok) {
-    await throwApiError(response);
-  }
-  return response.json();
-}
-
-export async function updateProfile(userId, requestBody) {
-  const response = await fetch(`${API_BASE_URL}/profiles/${userId}`, {
+export async function resetPassword(userId, requestBody) {
+  const response = await fetch(`${API_BASE_URL}/account/users/${userId}/password`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

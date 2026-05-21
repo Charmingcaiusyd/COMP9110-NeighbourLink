@@ -131,9 +131,6 @@ public class RideOfferQueryService {
         Profile profile = driver.getProfile();
         Double averageRating = null;
         Long ratingCount = 0L;
-        String bio = null;
-        String travelPreferences = null;
-        String trustNotes = null;
 
         if (profile != null) {
             Long profileId = profile.getId();
@@ -144,20 +141,13 @@ public class RideOfferQueryService {
             } else {
                 averageRating = profile.getAverageRating();
             }
-
-            bio = profile.getBio();
-            travelPreferences = profile.getTravelPreferences();
-            trustNotes = profile.getTrustNotes();
         }
 
         return new DriverTrustSummaryDto(
                 driver.getId(),
                 driver.getFullName(),
                 averageRating,
-                ratingCount,
-                bio,
-                travelPreferences,
-                trustNotes
+                ratingCount
         );
     }
 

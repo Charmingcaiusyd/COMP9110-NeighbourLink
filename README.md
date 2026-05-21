@@ -16,10 +16,9 @@ Current implementation status:
 3. Post one-off ride request, receive driver offers, accept one offer (`UC3`)
 
 Retained supporting or extended implementation surfaces:
-- Fixed admin login and admin control panel (`/admin`, direct access only)
 - Rider/driver trip history and notifications (`/my-trips`, supports outcome review)
-- Profile management (`/profile`, direct access only)
-- Driver document upload + admin review (extended implementation)
+- Account settings (`/account`, direct access only): reset password + payment methods
+- Driver document upload + verification-status workflow (extended implementation)
 - Tutorial page (`/tutorial`, retained as a direct-access reference page but hidden from primary navigation)
 
 ## Tech Stack
@@ -110,9 +109,6 @@ npm run dev
 ## Demo Accounts
 - Rider: `maria.rider@example.com` / `demo1234`
 - Driver: `emma.driver@example.com` / `demo1234`
-- Admin (fixed only): `admin@neighbourlink.local` / `admin12345`
-
-Admin account is configured in `backend/src/main/resources/application.yml` and is not registerable.
 
 ## Frontend Routes
 Primary reduced-budget journey:
@@ -121,7 +117,6 @@ Primary reduced-budget journey:
 - `/`
 - `/search-results`
 - `/ride-offer-details/:offerId`
-- `/post-ride-request`
 - `/ride-requests/:rideRequestId/offers`
 - `/ride-confirmed`
 - `/my-trips`
@@ -129,28 +124,25 @@ Primary reduced-budget journey:
 
 Retained supporting or direct-access routes:
 - `/tutorial` (hidden from primary navigation)
-- `/profile`
-- `/admin/login`
-- `/admin`
+- `/account`
+- Legacy `/post-ride-request` redirects to `/`
 
 ## Key Backend API Areas
 Stage 2 reduced-budget core:
 - `AuthController`
 - `RideOfferQueryController`
-- `RideOfferManagementController`
 - `JoinRequestController`
 - `OneOffRideRequestController`
 - `TripController`
 - `HealthController`
 
 Retained supporting or extended controllers:
-- `ProfileController`
+- `AccountController`
 - `RatingController`
 - `NotificationController`
 - `LocationController`
 - `RouteController`
 - `DriverDocumentController`
-- `AdminController`
 
 Full endpoint details: `docs/api-spec.md`
 

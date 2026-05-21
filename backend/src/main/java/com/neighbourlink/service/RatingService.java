@@ -43,11 +43,11 @@ public class RatingService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Rater user cannot rate themselves");
         }
 
-        Profile profile = profileRepository.findByUserId(target.getId()).orElseGet(() -> {
-            Profile created = new Profile();
-            created.setUser(target);
-            return profileRepository.save(created);
-        });
+        Profile profile = profileRepository.findByUserId(target.getId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Target user profile is not available for rating"
+                ));
 
         Rating rating = new Rating();
         rating.setProfile(profile);

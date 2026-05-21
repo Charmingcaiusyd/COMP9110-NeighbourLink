@@ -36,8 +36,6 @@ Format: JSON
 - UC1 Search Available Ride Offers:
   - `GET /ride-offers`
   - `GET /ride-offers/{id}`
-  - `POST /ride-offers` (driver self-service publish)
-  - `GET /drivers/{driverId}/ride-offers` (driver own posted offers)
 - UC2 Request to Join a Ride Offer:
   - `POST /join-requests`
   - `GET /riders/{riderId}/join-requests`
@@ -68,18 +66,9 @@ Format: JSON
   - `GET /routes/overview`
 
 ### 3.3 Retained Direct-Access or Extended Endpoints
-- Account/profile surfaces (now visible in top navigation as `Profile`):
-  - `GET /profiles/{userId}`
-  - `PATCH /profiles/{userId}`
+- Account surfaces (now visible in top navigation as `Account`):
+  - `PATCH /account/users/{userId}/password`
   - `POST /auth/social-login`
-- Internal admin console (fixed account, no registration):
-  - `GET /admin/overview`
-  - `GET /admin/users`
-  - `PATCH /admin/users/{userId}`
-  - `GET /admin/ride-offers`
-  - `GET /admin/ride-requests`
-  - `GET /admin/join-requests`
-  - `GET /admin/ride-matches`
 
 ## 4. Endpoints
 
@@ -135,53 +124,11 @@ Response `200`:
     "driverId": 12,
     "driverName": "Emma Lee",
     "averageRating": 4.7,
-    "ratingCount": 18,
-    "bio": "Daily commuter",
-    "travelPreferences": "No smoking",
-    "trustNotes": "Verified licence"
+    "ratingCount": 18
   }
 }
 ```
 Response `404`: offer not found
-
-#### POST `/ride-offers`
-Purpose: driver self-service publish a ride offer (not admin).
-
-Request body:
-```json
-{
-  "driverId": 12,
-  "origin": "Clayton",
-  "originAddress": "Clayton Station",
-  "originSuburb": "Clayton",
-  "originLatitude": -37.9241,
-  "originLongitude": 145.1207,
-  "destination": "Melbourne",
-  "destinationAddress": "Melbourne CBD",
-  "destinationSuburb": "Melbourne",
-  "destinationLatitude": -37.8136,
-  "destinationLongitude": 144.9631,
-  "departureDate": "2026-04-12",
-  "departureTime": "07:45",
-  "availableSeats": 2
-}
-```
-
-Response `201`:
-```json
-{
-  "offerId": 1201,
-  "status": "OPEN"
-}
-```
-
-Rules:
-- driver must be `ACTIVE`
-- driver licence must be `VERIFIED`
-- `availableSeats` must not exceed driver `spareSeatCapacity`
-
-#### GET `/drivers/{driverId}/ride-offers`
-Purpose: list a driver's own posted ride offers.
 
 ### 4.2 Join Request Flow
 #### POST `/join-requests`
@@ -483,26 +430,9 @@ Response `200`:
   "userId": 4,
   "fullName": "Maria Gomez",
   "email": "maria.rider@example.com",
-  "role": "RIDER",
-  "adminSessionKey": null
+  "role": "RIDER"
 }
 ```
-
-Admin fixed-account login uses the same endpoint and returns:
-```json
-{
-  "userId": -1,
-  "fullName": "NeighbourLink Admin",
-  "email": "admin@neighbourlink.local",
-  "role": "ADMIN",
-  "adminSessionKey": "NEIGHBOURLINK-ADMIN-SESSION-2026"
-}
-```
-
-Notes:
-- Admin account is fixed in backend config.
-- Registration endpoint does not support creating admin users.
-- Admin APIs require header `X-Admin-Session`.
 
 #### POST `/auth/register`
 Request body:
@@ -532,41 +462,24 @@ Request body:
 
 Response `200`: same shape as login response.
 
-#### GET `/profiles/{userId}`
-Purpose: retained direct-access profile surface; hidden from the primary Stage 2 navigation.
+#### PATCH `/account/users/{userId}/password`
+Purpose: account security operation used by the Account page reset-password form.
+
+Request body:
+```json
+{
+  "currentPassword": "demo1234",
+  "newPassword": "newSecure123"
+}
+```
 
 Response `200`:
 ```json
 {
   "userId": 4,
-  "fullName": "Maria Gomez",
-  "email": "maria.rider@example.com",
-  "phone": "0400000004",
-  "suburb": "Box Hill",
-  "bio": "Event volunteer",
-  "travelPreferences": "Needs occasional one-off rides",
-  "trustNotes": "Looks for profile and rating before acceptance",
-  "averageRating": null,
-  "ratingCount": 0
+  "message": "Password has been reset successfully."
 }
 ```
-
-#### PATCH `/profiles/{userId}`
-Purpose: retained direct-access profile edit surface; hidden from the primary Stage 2 navigation.
-
-Request body:
-```json
-{
-  "fullName": "Maria Gomez",
-  "phone": "0400000011",
-  "suburb": "Clayton",
-  "bio": "Updated bio",
-  "travelPreferences": "Quiet trips preferred",
-  "trustNotes": "Community volunteer"
-}
-```
-
-Response `200`: same shape as GET profile response.
 
 #### GET `/riders/{riderId}/trips` and GET `/drivers/{driverId}/trips`
 Response `200`:
@@ -622,71 +535,7 @@ Response `200`:
 }
 ```
 
-### 4.5 Internal Admin APIs (Fixed Account)
-These endpoints support a retained extended governance surface. They are intentionally outside the primary reduced-budget Stage 2 user journey.
-
-All endpoints below require request header:
-- `X-Admin-Session: <adminSessionKey>`
-
-#### GET `/admin/overview`
-Response `200`:
-```json
-{
-  "totalUsers": 6,
-  "totalRiders": 3,
-  "totalDrivers": 3,
-  "activeUsers": 6,
-  "suspendedUsers": 0,
-  "totalRideOffers": 4,
-  "openRideOffers": 3,
-  "totalRideRequests": 3,
-  "openRideRequests": 2,
-  "totalJoinRequests": 2,
-  "pendingJoinRequests": 1,
-  "totalRideMatches": 2,
-  "totalRatings": 3
-}
-```
-
-#### GET `/admin/users`
-Purpose: list all rider/driver profiles and account metadata for admin control panel.
-
-#### PATCH `/admin/users/{userId}`
-Purpose: update account/profile fields for any user role.
-
-Request body example:
-```json
-{
-  "fullName": "Emma Lee",
-  "phone": "0400000001",
-  "suburb": "Clayton",
-  "accountStatus": "ACTIVE",
-  "bio": "Daily commuter",
-  "travelPreferences": "No smoking",
-  "trustNotes": "Verified licence",
-  "driverLicenceVerifiedStatus": "VERIFIED",
-  "driverVehicleInfo": "Toyota Corolla",
-  "driverSpareSeatCapacity": 3
-}
-```
-
-Validation:
-- `accountStatus`: `ACTIVE | INACTIVE | SUSPENDED`
-- `driverLicenceVerifiedStatus`: `PENDING | VERIFIED | REJECTED` (driver only)
-
-#### GET `/admin/ride-offers`
-Purpose: list all ride offers across all drivers.
-
-#### GET `/admin/ride-requests`
-Purpose: list all one-off ride requests across all riders.
-
-#### GET `/admin/join-requests`
-Purpose: list all join requests with rider + offer references.
-
-#### GET `/admin/ride-matches`
-Purpose: list all confirmed matches from both join-request and one-off flows.
-
-### 4.6 Location and Map APIs (Retained Support)
+### 4.5 Location and Map APIs (Retained Support)
 These endpoints support Australia address lookup, map pin reverse lookup, and route overview. In the reduced-budget framing, they are treated as location-entry and map-preview aids rather than separate core use cases.
 
 #### GET `/locations/au/search`
