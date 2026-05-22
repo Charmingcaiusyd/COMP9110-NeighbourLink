@@ -56,6 +56,7 @@ async function captureScreenshots() {
   }
 
   async function shotPage(fileName, title, note) {
+    await page.waitForTimeout(1000);
     await page.screenshot({
       path: path.join(outDir, fileName + ".png"),
       fullPage: true,
@@ -64,6 +65,7 @@ async function captureScreenshots() {
   }
 
   async function shotLocator(locator, fileName, title, note) {
+    await page.waitForTimeout(1000);
     await locator.screenshot({
       path: path.join(outDir, fileName + ".png"),
     });

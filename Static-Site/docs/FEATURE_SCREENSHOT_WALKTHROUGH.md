@@ -8,6 +8,8 @@ It is designed for:
 - quick navigation of the static front-end prototype
 - evidence that the static site covers the same user-visible journeys as the current runtime direction
 
+The current screenshot pack was re-generated on 2026-05-22 after the image folder was rebuilt, so the guide once again matches the live Rider and Driver static demo states.
+
 ## How to use this guide
 
 1. Read from top to bottom if you want a full demo sequence.
