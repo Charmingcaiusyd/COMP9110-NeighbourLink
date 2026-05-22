@@ -11,7 +11,7 @@ It is designed for:
 ## How to use this guide
 
 1. Read from top to bottom if you want a full demo sequence.
-2. Jump to the Rider, Driver, or Removed Surface sections if you only need one part.
+2. Jump to the Rider or Driver sections if you only need one part.
 3. Use the screenshot title, route, and explanation together when presenting.
 4. Pair this guide with `Static-Site/README.md` for overall feature scope and route coverage.
 
@@ -22,21 +22,23 @@ The screenshot set covers:
 - rider onboarding
 - driver onboarding with document fields
 - rider unified search and request flow
+- live destination search state in the browser-only OpenStreetMap integration
 - trust review before join request submission
 - rider trip history and notification visibility
+- rider confirmed-trip filtering and payment-entry visibility
 - automatic fallback from search to one-off request
 - driver offer review and acceptance flow
+- driver rejection flow and filtered activity view
 - payment demo
-- account settings and saved payment methods
+- account settings, password reset, and saved payment methods
 - driver operational hub
-- removed admin surface validation
 
 ## Public Entry And Onboarding
 
 ### 01. Login Page - Static Sign In
 Route: `#/login`
 Role focus: Public
-Purpose: Shows the browser-only entry page with fixed demo credentials and no admin login surface.
+Purpose: Shows the browser-only entry page with fixed demo credentials.
 
 ![01 Login Page](../Pic/01_Login_Page_Static_SignIn.png)
 
@@ -80,9 +82,16 @@ Purpose: Shows the first step of the merged rider flow where pickup intent is se
 ### 07. Find a Ride - Destination Step
 Route: `#/`
 Role focus: Rider
-Purpose: Shows the second step with destination input, suggestion chips, and static journey preview.
+Purpose: Shows the second step with destination input, suggestion chips, live map selection, and destination metadata.
 
 ![07 Find Destination](../Pic/07_Find_A_Ride_Destination_Step.png)
+
+### 28. Find a Ride - Destination Live Search State
+Route: `#/`
+Role focus: Rider
+Purpose: Shows the same destination step after the user triggers a live OpenStreetMap address search from the static site.
+
+![28 Destination Live Search](../Pic/28_Find_A_Ride_Destination_Live_Search_State.png)
 
 ### 08. Find a Ride - Trip Date Step
 Route: `#/`
@@ -132,6 +141,13 @@ Role focus: Rider
 Purpose: Shows that My Trips can be narrowed to the join-request path only.
 
 ![14 Join Filter](../Pic/14_My_Trips_Filtered_Join_Request_View.png)
+
+### 29. My Trips - Confirmed Filter With Payment CTA
+Route: `#/my-trips`
+Role focus: Rider
+Purpose: Shows the confirmed join-path slice where matched records keep their payment-entry action visible from the unified order stream.
+
+![29 Confirmed Filter](../Pic/29_My_Trips_Confirmed_Filter_With_Payment_CTA.png)
 
 ### 15. Search Results - Auto Request Fallback
 Route: `#/search-results?...`
@@ -189,6 +205,13 @@ Purpose: Shows the account state after saving a new default payment method.
 
 ![22 New Default Payment](../Pic/22_Account_Settings_New_Default_Payment_Method.png)
 
+### 30. Account Settings - Password Reset Success
+Route: `#/account`
+Role focus: Rider / Driver
+Purpose: Shows the same reduced account page after a successful password reset action.
+
+![30 Password Reset Success](../Pic/30_Account_Settings_Password_Reset_Success.png)
+
 ## Driver Operational Flow
 
 ### 23. Driver Hub - Pending Join Requests
@@ -212,6 +235,13 @@ Purpose: Shows the driver hub after a join request has been accepted and the sta
 
 ![25 Driver Join Accepted](../Pic/25_Driver_Hub_Join_Request_Accepted_State.png)
 
+### 31. Driver Hub - Join Request Rejected State
+Route: `#/driver-hub`
+Role focus: Driver
+Purpose: Shows the alternative explicit-decision path where a driver rejects a pending join request.
+
+![31 Driver Join Rejected](../Pic/31_Driver_Hub_Join_Request_Rejected_State.png)
+
 ### 26. Driver Hub - One-Off Offer History
 Route: `#/driver-hub`
 Role focus: Driver
@@ -226,22 +256,19 @@ Purpose: Shows the driver-side activity stream after decisions and one-off respo
 
 ![27 Driver My Trips](../Pic/27_Driver_My_Trips_Activity_Stream.png)
 
-## Removed Surface Validation
+### 32. My Trips - Driver One-Off Request Filter View
+Route: `#/my-trips`
+Role focus: Driver
+Purpose: Shows the driver-side trip page narrowed to one-off request matches and related activity only.
 
-### 28. Admin Route Removed - Not Found
-Route: `#/admin`
-Role focus: Removed feature proof
-Purpose: Confirms that the old admin route is no longer part of the product and now resolves to the not-found surface.
-
-![28 Admin Removed](../Pic/28_Admin_Route_Removed_Not_Found.png)
+![32 Driver One-Off Filter](../Pic/32_Driver_My_Trips_Filtered_One_Off_Request_View.png)
 
 ## Recommended presentation order
 
 1. Start with 01 to 05 for public scope and tutorial support.
-2. Use 06 to 20 for the full rider story.
-3. Use 21 to 22 for account and payment-method coverage.
-4. Use 23 to 27 for the driver-side operational proof.
-5. End with 28 to show that the removed admin surface is no longer exposed.
+2. Use 06, 07, 28, 08 to 20, and 29 for the full rider story, including live map search and confirmed-payment entry states.
+3. Use 21, 22, and 30 for account, password-reset, and payment-method coverage.
+4. Use 23 to 27, then 31 and 32, for the driver-side operational proof and alternate states.
 
 ## Related files
 

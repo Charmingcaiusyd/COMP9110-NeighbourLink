@@ -86,10 +86,10 @@ async function captureScreenshots() {
   await shotPage(
     "01_Login_Page_Static_SignIn",
     "Login Page - Static Sign In",
-    "Public login page with fixed demo accounts and no admin entry."
+    "Public login page with fixed demo accounts."
   );
 
-  await page.getByRole("button", { name: "Open Register" }).click();
+  await page.getByRole("link", { name: "Register" }).click();
   await page.waitForFunction(() => location.hash === "#/register");
   await shotPage(
     "02_Register_Page_Rider_Onboarding",
@@ -97,7 +97,7 @@ async function captureScreenshots() {
     "Default rider registration form."
   );
 
-  await page.locator('[data-role="DRIVER"]').click();
+  await page.locator('select[name="role"]').selectOption("DRIVER");
   await page.waitForTimeout(100);
   await shotPage(
     "03_Register_Page_Driver_Document_Upload",
@@ -113,7 +113,7 @@ async function captureScreenshots() {
   );
 
   await page.getByRole("button", { name: "Driver Operations" }).click();
-  await page.getByRole("button", { name: "QUIZ" }).click();
+  await page.locator('[data-action="tutorial-mode"][data-mode="QUIZ"]').click();
   await page.waitForTimeout(100);
   await shotPage(
     "05_Tutorial_Page_Driver_Quiz_Mode",
@@ -129,15 +129,33 @@ async function captureScreenshots() {
     "Unified rider flow starting on the Origin step."
   );
 
-  await page.locator('[data-step="DESTINATION"]').click();
+  await page.locator('[data-find-step="DESTINATION"]').click();
   await page.waitForTimeout(100);
   await shotPage(
     "07_Find_A_Ride_Destination_Step",
     "Find a Ride - Destination Step",
-    "Destination step with static map preview and suburb suggestions."
+    "Destination step with live OpenStreetMap search, map selection, and route preview."
   );
 
-  await page.locator('[data-step="TRIP_DATE"]').click();
+  await page.locator('[data-loc-query="destination"]').fill("Melbourne");
+  await page.locator('[data-action="loc-search"][data-scope="destination"]').click();
+  try {
+    await page.locator(".location-results").waitFor({ state: "visible", timeout: 12000 });
+  } catch (_error) {
+    // Public map search may vary by network condition; keep the flow moving even if suggestions are delayed.
+  }
+  await page.waitForTimeout(250);
+  await shotPage(
+    "28_Find_A_Ride_Destination_Live_Search_State",
+    "Find a Ride - Destination Live Search State",
+    "Destination step after triggering a live OpenStreetMap search from the browser-only static demo."
+  );
+  if (await page.locator(".location-result-item").count()) {
+    await page.locator(".location-result-item").first().click();
+    await page.waitForTimeout(150);
+  }
+
+  await page.locator('[data-find-step="TRIP"]').click();
   await page.waitForTimeout(100);
   await shotPage(
     "08_Find_A_Ride_Trip_Date_Step",
@@ -145,7 +163,7 @@ async function captureScreenshots() {
     "Trip date, departure time, flexibility, and passenger controls."
   );
 
-  await page.getByRole("button", { name: "Confirm and Continue" }).click();
+  await page.getByRole("button", { name: "Confirm Flow" }).click();
   await page.waitForFunction(() => location.hash.startsWith("#/search-results"));
   await shotPage(
     "09_Search_Results_Matching_Ride_Offers",
@@ -153,7 +171,7 @@ async function captureScreenshots() {
     "Offer search results for a same-day within-three-hours ride search."
   );
 
-  await page.getByRole("button", { name: "View Offer Details" }).first().click();
+  await page.getByRole("link", { name: "View Details" }).first().click();
   await page.waitForFunction(() => location.hash.startsWith("#/ride-offer-details/"));
   await shotPage(
     "10_Ride_Offer_Details_Trust_And_Seats",
@@ -161,7 +179,7 @@ async function captureScreenshots() {
     "Driver trust summary, verification cues, and seat request form."
   );
 
-  await page.getByRole("button", { name: "Submit Join Request" }).click();
+  await page.getByRole("button", { name: "Request This Ride" }).click();
   await page.waitForFunction(() => location.hash === "#/ride-confirmed");
   await shotPage(
     "11_Join_Request_Submitted_Confirmation",
@@ -169,7 +187,7 @@ async function captureScreenshots() {
     "Confirmation page after rider submits a join request."
   );
 
-  await page.getByRole("button", { name: "Open My Trips" }).click();
+  await page.getByRole("link", { name: "Open My Trips" }).click();
   await page.waitForFunction(() => location.hash === "#/my-trips");
   await shotPage(
     "12_My_Trips_Unified_Orders_Overview",
@@ -177,7 +195,7 @@ async function captureScreenshots() {
     "Rider view with notifications and unified order cards."
   );
   await shotLocator(
-    page.locator("section.section-card").nth(1),
+    page.locator("section.section-card").nth(0),
     "13_My_Trips_Notifications_Section",
     "My Trips - Notifications Section",
     "Dedicated notifications section inside My Trips."
@@ -191,12 +209,23 @@ async function captureScreenshots() {
     "My Trips filtered to join-request records only."
   );
 
-  await page.getByRole("button", { name: "Find a Ride" }).click();
+  await page.locator('[data-action="trips-stage"][data-value="CONFIRMED"]').click();
+  await page.waitForTimeout(120);
+  await shotPage(
+    "29_My_Trips_Confirmed_Filter_With_Payment_CTA",
+    "My Trips - Confirmed Filter With Payment CTA",
+    "Rider My Trips narrowed to confirmed join-path items, including payment-entry actions for matched trips."
+  );
+  await page.locator('[data-action="trips-stage"][data-value="ALL"]').click();
+  await page.locator('[data-action="trips-path"][data-value="ALL"]').click();
+  await page.waitForTimeout(120);
+
+  await page.getByRole("link", { name: "Find a Ride" }).click();
   await page.waitForFunction(() => location.hash === "#/");
-  await page.locator('[data-step="TRIP_DATE"]').click();
-  await page.locator('input[name="tripDate"]').fill("2026-04-10");
-  await page.locator('input[name="departureTime"]').fill("10:00");
-  await page.getByRole("button", { name: "Confirm and Continue" }).click();
+  await page.locator('[data-find-step="TRIP"]').click();
+  await page.locator('input[type="date"]').fill("2026-04-10");
+  await page.locator('input[type="time"]').fill("10:00");
+  await page.getByRole("button", { name: "Confirm Flow" }).click();
   await page.waitForFunction(() => location.hash.startsWith("#/search-results"));
   await shotPage(
     "15_Search_Results_Auto_Request_Fallback_Message",
@@ -227,7 +256,7 @@ async function captureScreenshots() {
     "Confirmation after the rider accepts a driver offer for a one-off request."
   );
 
-  await page.getByRole("button", { name: "Go to Payment" }).click();
+  await page.getByRole("link", { name: "Go to Payment" }).click();
   await page.waitForFunction(() => location.hash.startsWith("#/payment?rideMatchId="));
   await shotPage(
     "19_Payment_Demo_Checkout_Page",
@@ -238,7 +267,7 @@ async function captureScreenshots() {
   await page.locator('input[name="cardNumber"]').fill("4242424242424242");
   await page.locator('input[name="expiry"]').fill("12/29");
   await page.locator('input[name="cvv"]').fill("123");
-  await page.getByRole("button", { name: "Confirm Demo Payment" }).click();
+  await page.getByRole("button", { name: "Pay Now (Demo)" }).click();
   await page.waitForTimeout(120);
   await shotPage(
     "20_Payment_Demo_Success_Message",
@@ -246,12 +275,23 @@ async function captureScreenshots() {
     "Payment page after the demo payment has been submitted successfully."
   );
 
-  await page.getByRole("button", { name: "Account" }).click();
+  await page.getByRole("link", { name: "Account" }).click();
   await page.waitForFunction(() => location.hash === "#/account");
   await shotPage(
     "21_Account_Settings_Reset_Password_And_Payments",
     "Account Settings - Reset Password and Payments",
     "Account page with reset-password form and saved payment methods."
+  );
+
+  await page.locator('input[name="currentPassword"]').fill("demo1234");
+  await page.locator('input[name="newPassword"]').fill("demo5678");
+  await page.locator('input[name="confirmPassword"]').fill("demo5678");
+  await page.getByRole("button", { name: "Reset Password" }).click();
+  await page.waitForTimeout(120);
+  await shotPage(
+    "30_Account_Settings_Password_Reset_Success",
+    "Account Settings - Password Reset Success",
+    "Account page after a successful password reset in the browser-only demo."
   );
 
   await page.locator('input[name="last4"]').fill("1111");
@@ -267,7 +307,11 @@ async function captureScreenshots() {
 
   await page.getByRole("button", { name: "Log Out" }).click();
   await page.waitForFunction(() => location.hash === "#/login");
-  await login("emma.driver@example.com", "demo1234");
+  await page.evaluate(() => localStorage.removeItem("neighbourlink.static.site.session.v1"));
+  await page.goto(base + `?fresh=${Date.now()}#/login`, { waitUntil: "load" });
+  await page.locator('input[name="email"]').fill("emma.driver@example.com");
+  await page.locator('input[name="password"]').fill("demo1234");
+  await page.getByRole("button", { name: "Log In" }).click();
   await page.waitForFunction(() => location.hash === "#/driver-hub");
   await shotPage(
     "23_Driver_Hub_Pending_Join_Requests",
@@ -292,6 +336,16 @@ async function captureScreenshots() {
     "Driver Hub after a pending join request has been accepted."
   );
 
+  const rejectedJoinForm = page.locator('[data-form="driver-join"]').first();
+  await rejectedJoinForm.locator('select[name="decision"]').selectOption("REJECTED");
+  await rejectedJoinForm.getByRole("button", { name: "Submit Decision" }).click();
+  await page.waitForTimeout(150);
+  await shotPage(
+    "31_Driver_Hub_Join_Request_Rejected_State",
+    "Driver Hub - Join Request Rejected State",
+    "Driver Hub after the driver records a rejection on a pending join request."
+  );
+
   const responseForm = page.locator('[data-form="driver-request-offer"]').first();
   await responseForm.locator('input[name="meetingPoint"]').fill("Monash North Loop");
   await responseForm.getByRole("button", { name: "Respond to Request" }).click();
@@ -303,7 +357,7 @@ async function captureScreenshots() {
     "Driver history after submitting a one-off response."
   );
 
-  await page.getByRole("button", { name: "My Trips" }).click();
+  await page.getByRole("link", { name: "My Trips" }).click();
   await page.waitForFunction(() => location.hash === "#/my-trips");
   await shotPage(
     "27_Driver_My_Trips_Activity_Stream",
@@ -311,17 +365,20 @@ async function captureScreenshots() {
     "Driver-side My Trips activity stream after decisions and responses."
   );
 
-  await goto("#/admin");
+  await page.locator('[data-action="trips-trip-type"][data-value="ONE_OFF_REQUEST"]').click();
+  await page.waitForTimeout(120);
   await shotPage(
-    "28_Admin_Route_Removed_Not_Found",
-    "Admin Route Removed - Not Found",
-    "Removed admin route now resolves to the not-found page."
+    "32_Driver_My_Trips_Filtered_One_Off_Request_View",
+    "My Trips - Driver One-Off Request Filter View",
+    "Driver My Trips narrowed to confirmed one-off request matches and related activity."
   );
 
   const readmeLines = [
     "# Screenshot Index",
     "",
     `Total screenshots: ${manifest.length}`,
+    "",
+    "Detailed guide: [../docs/FEATURE_SCREENSHOT_WALKTHROUGH.md](../docs/FEATURE_SCREENSHOT_WALKTHROUGH.md)",
     "",
     "| File | Functional Display Name | Description |",
     "| --- | --- | --- |",
