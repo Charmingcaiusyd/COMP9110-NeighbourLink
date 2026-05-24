@@ -1,13 +1,14 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const htmlFiles = fs.readdirSync(root).filter((name) => name.endsWith('.html'));
-const hrefPattern = /href="(\.\/[^\"]+\.html)"/gi;
+const htmlRoot = path.join(root, 'html');
+const htmlFiles = fs.readdirSync(htmlRoot).filter((name) => name.endsWith('.html'));
+const hrefPattern = /href="(\.\/[^"]+\.html)"/gi;
 const scriptPattern = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 
 for (const file of htmlFiles) {
-  const fullPath = path.join(root, file);
+  const fullPath = path.join(htmlRoot, file);
   const html = fs.readFileSync(fullPath, 'utf8');
   const scripts = Array.from(html.matchAll(scriptPattern));
   for (const match of scripts) {
@@ -21,7 +22,7 @@ for (const file of htmlFiles) {
       throw new Error(`${file} contains script body content instead of a pure external reference.`);
     }
     const src = srcMatch[1];
-    const target = path.resolve(root, src);
+    const target = path.resolve(path.dirname(fullPath), src);
     if (!fs.existsSync(target)) {
       throw new Error(`${file} references a missing script file: ${src}`);
     }
@@ -35,7 +36,7 @@ for (const file of htmlFiles) {
   const matches = Array.from(html.matchAll(hrefPattern));
   for (const match of matches) {
     const href = match[1];
-    const target = path.resolve(root, href);
+    const target = path.resolve(path.dirname(fullPath), href);
     if (!fs.existsSync(target)) {
       throw new Error(`${file} links to a missing page: ${href}`);
     }

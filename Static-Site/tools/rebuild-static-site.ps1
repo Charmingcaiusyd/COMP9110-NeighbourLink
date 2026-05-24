@@ -1,4 +1,12 @@
 $root = Split-Path -Parent $PSScriptRoot
+$htmlRoot = Join-Path $root 'html'
+$jsRoot = Join-Path $root 'js'
+$cssRoot = Join-Path $root 'css'
+
+New-Item -Path $htmlRoot -ItemType Directory -Force | Out-Null
+New-Item -Path $jsRoot -ItemType Directory -Force | Out-Null
+New-Item -Path $cssRoot -ItemType Directory -Force | Out-Null
+$script:generatedPages = @()
 
 function Get-Nav([string]$role, [string]$active) {
   if ($role -eq 'public') {
@@ -31,6 +39,10 @@ function Get-Nav([string]$role, [string]$active) {
 
 function New-Page([string]$name, [string]$title, [string]$role, [string]$active, [string]$subtitle, [string]$body, [string]$extraScripts = '') {
   $nav = Get-Nav $role $active
+  $resolvedExtraScripts = $extraScripts `
+    -replace '\./auth-flow\.js', '../js/auth-flow.js' `
+    -replace '\./prototype-context\.js', '../js/prototype-context.js' `
+    -replace '\./find-a-ride-flow\.js', '../js/find-a-ride-flow.js'
   $roleLabel = switch ($role) {
     'rider' { 'Rider Prototype Surface' }
     'driver' { 'Driver Prototype Surface' }
@@ -44,7 +56,7 @@ function New-Page([string]$name, [string]$title, [string]$role, [string]$active,
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>$title - NeighbourLink Static Prototype</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
   <div class="site-shell">
@@ -69,11 +81,12 @@ function New-Page([string]$name, [string]$title, [string]$role, [string]$active,
       $body
     </main>
   </div>
-  $extraScripts
+  $resolvedExtraScripts
 </body>
 </html>
 "@
-  Set-Content -Path (Join-Path $root $name) -Value $html -Encoding UTF8
+  Set-Content -Path (Join-Path $htmlRoot $name) -Value $html -Encoding UTF8
+  $script:generatedPages += $name
 }
 
 $styles = @'
@@ -653,7 +666,7 @@ textarea {
   }
 }
 '@
-Set-Content -Path (Join-Path $root 'styles.css') -Value $styles -Encoding UTF8
+Set-Content -Path (Join-Path $cssRoot 'styles.css') -Value $styles -Encoding UTF8
 
 New-Page 'index.html' 'Log In' 'public' 'login' 'Use a simple sign-in form to enter the Rider or Driver walkthrough without adding backend complexity to the static prototype.' @'
 <section class="panel">
@@ -924,14 +937,44 @@ New-Page 'ride-offer-details.html' 'Ride Offer Details' 'rider' 'find' 'The ride
 New-Page 'my-trips.html' 'My Trips' 'rider' 'my-trips' 'Notifications and trip records stay separate so rider updates remain easy to follow.' @'
 <section class="panel">
   <h2>Notifications</h2>
-  <section class="notice notice-success anchor-section" id="join-request-submitted">
-    <span class="pill pending" id="notification-pill">Pending</span>
-    <h3 id="notification-title">Join Request Submitted</h3>
-    <p id="join-request-message">Your join request for Emma Driver&apos;s Clayton to Melbourne ride is now pending driver review.</p>
-    <div class="card-actions">
-      <a class="btn" id="notification-primary-link" href="./my-trips.html#trip-records">Open Trip Records</a>
-    </div>
-  </section>
+  <div class="results-grid">
+    <article class="notice notice-success anchor-section notification-item" id="join-request-submitted" data-notification-key="join-request-main" data-default-read="false">
+      <span class="pill pending notification-read-pill" id="notification-read-pill">Unread</span>
+      <h3 class="notification-title" id="notification-title">Join Request Submitted</h3>
+      <p class="notification-summary" id="notification-summary">Your join request was submitted. Full details are available in trip records.</p>
+      <p class="muted"><strong>Time:</strong> <span class="notification-time" id="notification-time">Just now</span></p>
+      <div class="card-actions">
+        <button class="btn btn-secondary notification-toggle-read-btn" id="notification-toggle-read-btn" type="button">Mark as Read</button>
+      </div>
+    </article>
+    <article class="notice notice-warning notification-item" data-notification-key="trip-confirmed-601" data-default-read="true">
+      <span class="pill confirmed notification-read-pill">Read</span>
+      <h3 class="notification-title">Trip Confirmed</h3>
+      <p class="notification-summary">Ride Match #601 is confirmed and moved to completed records.</p>
+      <p class="muted"><strong>Time:</strong> <span class="notification-time">2026-04-09 07:42</span></p>
+      <div class="card-actions">
+        <button class="btn btn-secondary notification-toggle-read-btn" type="button">Mark as Unread</button>
+      </div>
+    </article>
+    <article class="notice notice-danger notification-item" data-notification-key="join-request-rejected-498" data-default-read="false">
+      <span class="pill pending notification-read-pill">Unread</span>
+      <h3 class="notification-title">Join Request Rejected</h3>
+      <p class="notification-summary">Join Request #498 was rejected due to seat unavailability.</p>
+      <p class="muted"><strong>Time:</strong> <span class="notification-time">2026-04-08 18:10</span></p>
+      <div class="card-actions">
+        <button class="btn btn-secondary notification-toggle-read-btn" type="button">Mark as Read</button>
+      </div>
+    </article>
+    <article class="notice notice-success notification-item" data-notification-key="settings-payment-updated" data-default-read="true">
+      <span class="pill confirmed notification-read-pill">Read</span>
+      <h3 class="notification-title">Payment Preference Updated</h3>
+      <p class="notification-summary">Your rider payment preference was saved successfully.</p>
+      <p class="muted"><strong>Time:</strong> <span class="notification-time">2026-04-07 10:24</span></p>
+      <div class="card-actions">
+        <button class="btn btn-secondary notification-toggle-read-btn" type="button">Mark as Unread</button>
+      </div>
+    </article>
+  </div>
 </section>
 <section class="panel anchor-section" id="trip-records">
   <h2>Trip Records</h2>
@@ -1379,8 +1422,22 @@ $obsoletePages = @(
 )
 
 foreach ($obsoletePage in $obsoletePages) {
-  $obsoletePath = Join-Path $root $obsoletePage
-  if (Test-Path $obsoletePath) {
-    Remove-Item $obsoletePath -Force
+  foreach ($base in @($root, $htmlRoot)) {
+    $obsoletePath = Join-Path $base $obsoletePage
+    if (Test-Path $obsoletePath) {
+      Remove-Item $obsoletePath -Force
+    }
   }
+}
+
+foreach ($generatedPage in $script:generatedPages) {
+  $legacyRootPath = Join-Path $root $generatedPage
+  if (Test-Path $legacyRootPath) {
+    Remove-Item $legacyRootPath -Force
+  }
+}
+
+$legacyRootStyles = Join-Path $root 'styles.css'
+if (Test-Path $legacyRootStyles) {
+  Remove-Item $legacyRootStyles -Force
 }

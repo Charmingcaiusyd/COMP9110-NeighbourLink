@@ -4,6 +4,7 @@ const { execFileSync } = require('child_process');
 const { pathToFileURL } = require('url');
 
 const root = path.resolve(__dirname, '..');
+const htmlRoot = path.join(root, 'html');
 const picDir = path.join(root, 'Pic');
 const captureDir = path.join(root, '_capture');
 const captureDelayMs = 1000;
@@ -21,17 +22,26 @@ const pages = [
   { source: 'find-a-ride.html', image: '04_Find_A_Ride_Destination_Section.png', focusCss: '.page-wrap > section{display:none!important;} .page-wrap > section.hero-card,.page-wrap > section:nth-of-type(2),.page-wrap > section#destination{display:grid!important;}' },
   { source: 'find-a-ride.html', image: '05_Find_A_Ride_Trip_Date_Section.png', focusCss: '.page-wrap > section{display:none!important;} .page-wrap > section.hero-card,.page-wrap > section:nth-of-type(2),.page-wrap > section#trip-date{display:grid!important;}' },
   { source: 'search-results.html', image: '06_Search_Results_Matching_Ride_Offers.png' },
-  { source: 'search-results.html?origin=Clayton&destination=Geelong&date=2026-04-09&time=07:30&passengers=1', image: '09_Search_Results_Matching_Failed.png', focusCss: '.page-wrap > section{display:none!important;} .page-wrap > section.hero-card,.page-wrap > section#matching-failed,.page-wrap > section.summary-box{display:grid!important;}' },
-  { source: 'ride-offer-details.html', image: '07_Ride_Offer_Details_Review_Page.png' },
-  { source: 'my-trips.html', image: '08_Join_Request_Submitted_Confirmation.png', focusCss: '.page-wrap > section{display:none!important;} .page-wrap > section.hero-card,.page-wrap > section#join-request-submitted{display:grid!important;}' },
-  { source: 'my-trips.html', image: '10_My_Trips_All_Outcomes.png' },
-  { source: 'my-trips.html', image: '11_My_Trips_Join_Requests_Filter.png', focusCss: '.page-wrap > section{display:none!important;} .page-wrap > section.hero-card,.page-wrap > section#join-requests{display:grid!important;}' },
-  { source: 'my-trips.html', image: '12_My_Trips_Confirmed_Trips_Filter.png', focusCss: '.page-wrap > section{display:none!important;} .page-wrap > section.hero-card,.page-wrap > section#confirmed-trips{display:grid!important;}' },
-  { source: 'driver-hub.html', image: '13_Driver_Review_Overview.png' },
-  { source: 'driver-accepted-details.html?request=504&rider=Olivia%20Chen&driver=Liam%20Driver&route=Clayton%20to%20Docklands&seats=1&meeting=Monash%20northern%20pickup%20zone', image: '14_Driver_Accepted_Details.png' },
-  { source: 'driver-rejected-details.html?request=499&rider=Zoe%20Patel&driver=Emma%20Driver&route=Clayton%20to%20Melbourne%20CBD&seats=1&reason=Departure%20timing%20changed%20before%20confirmation', image: '15_Driver_Rejected_Details.png' },
-  { source: 'driver-decision-outcome.html?request=504&rider=Olivia%20Chen&driver=Liam%20Driver&route=Clayton%20to%20Docklands&seats=1&available=1&decision=accepted', image: '16_Driver_Decision_Accepted_Outcome.png' },
-  { source: 'driver-decision-outcome.html?request=501&rider=Daniel%20Rider&driver=Emma%20Driver&route=Clayton%20to%20Melbourne%20CBD&seats=1&available=2&decision=rejected', image: '17_Driver_Decision_Rejected_Outcome.png' }
+  { source: 'search-results.html?origin=Clayton&destination=Geelong&date=2026-04-09&time=07:30&passengers=1', image: '07_Search_Results_Matching_Failed.png', focusCss: '.page-wrap > section{display:none!important;} .page-wrap > section.hero-card,.page-wrap > section#matching-failed,.page-wrap > section.summary-box{display:grid!important;}' },
+  { source: 'ride-offer-details.html', image: '08_Ride_Offer_Details_Review_Page.png' },
+  { source: 'my-trips.html#join-request-submitted', image: '09_Join_Request_Submitted_Confirmation.png', focusCss: '.page-wrap > section{display:none!important;} .page-wrap > section.hero-card,.page-wrap > section:nth-of-type(2){display:grid!important;}' },
+  { source: 'my-trips.html', image: '10_My_Trips_All_Records.png' },
+  { source: 'my-trips.html#in-progress', image: '11_My_Trips_In_Progress_Filter.png' },
+  { source: 'my-trips.html#completed', image: '12_My_Trips_Completed_Filter.png' },
+  { source: 'rider-record-501-details.html', image: '13_Rider_Record_501_Details.png' },
+  { source: 'rider-record-601-details.html', image: '14_Rider_Record_601_Details.png' },
+  { source: 'rider-settings.html', image: '15_Rider_Settings_Password_And_Payment.png' },
+  { source: 'driver-hub.html', image: '16_Driver_Review_Overview.png' },
+  { source: 'driver-accepted-details.html?request=504&rider=Olivia%20Chen&driver=Liam%20Driver&route=Clayton%20to%20Docklands&seats=1&meeting=Monash%20northern%20pickup%20zone', image: '17_Driver_Accepted_Details.png' },
+  { source: 'driver-rejected-details.html?request=499&rider=Zoe%20Patel&driver=Emma%20Driver&route=Clayton%20to%20Melbourne%20CBD&seats=1&reason=Departure%20timing%20changed%20before%20confirmation', image: '18_Driver_Rejected_Details.png' },
+  { source: 'driver-decision-outcome.html?request=504&rider=Olivia%20Chen&driver=Liam%20Driver&route=Clayton%20to%20Docklands&seats=1&available=1&decision=accepted', image: '19_Driver_Decision_Accepted_Outcome.png' },
+  { source: 'driver-decision-outcome.html?request=501&rider=Daniel%20Rider&driver=Emma%20Driver&route=Clayton%20to%20Melbourne%20CBD&seats=1&available=2&decision=rejected', image: '20_Driver_Decision_Rejected_Outcome.png' },
+  { source: 'driver-trip-workflow.html?request=501&rider=Daniel%20Rider&driver=Emma%20Driver&route=Clayton%20to%20Melbourne%20CBD&seats=1&meeting=Clayton%20Station%20Gate%202&destination=Melbourne%20CBD%20drop-off%20zone&stage=ready', image: '21_Driver_Trip_Workflow_Ready.png' },
+  { source: 'driver-trip-workflow.html?request=501&rider=Daniel%20Rider&driver=Emma%20Driver&route=Clayton%20to%20Melbourne%20CBD&seats=1&meeting=Clayton%20Station%20Gate%202&destination=Melbourne%20CBD%20drop-off%20zone&stage=pickup_departed', image: '22_Driver_Trip_Workflow_Pickup_Departed.png' },
+  { source: 'driver-trip-workflow.html?request=501&rider=Daniel%20Rider&driver=Emma%20Driver&route=Clayton%20to%20Melbourne%20CBD&seats=1&meeting=Clayton%20Station%20Gate%202&destination=Melbourne%20CBD%20drop-off%20zone&stage=pickup_arrived', image: '23_Driver_Trip_Workflow_Pickup_Arrived.png' },
+  { source: 'driver-trip-workflow.html?request=501&rider=Daniel%20Rider&driver=Emma%20Driver&route=Clayton%20to%20Melbourne%20CBD&seats=1&meeting=Clayton%20Station%20Gate%202&destination=Melbourne%20CBD%20drop-off%20zone&stage=destination_departed', image: '24_Driver_Trip_Workflow_Destination_Departed.png' },
+  { source: 'driver-trip-workflow.html?request=501&rider=Daniel%20Rider&driver=Emma%20Driver&route=Clayton%20to%20Melbourne%20CBD&seats=1&meeting=Clayton%20Station%20Gate%202&destination=Melbourne%20CBD%20drop-off%20zone&stage=completed', image: '25_Driver_Trip_Workflow_Completed.png' },
+  { source: 'driver-settings.html', image: '26_Driver_Settings_Password_And_Payment.png' }
 ];
 
 const figureComposites = [
@@ -47,16 +57,16 @@ const figureComposites = [
     image: 'Figure_5_Ride_Offer_Details_and_Join_Request.png',
     title: 'Figure 5. Ride Offer Details and Join Request',
     panels: [
-      { image: '07_Ride_Offer_Details_Review_Page.png', label: 'Ride Offer Details' },
-      { image: '08_Join_Request_Submitted_Confirmation.png', label: 'Join Request Outcome' }
+      { image: '08_Ride_Offer_Details_Review_Page.png', label: 'Ride Offer Details' },
+      { image: '09_Join_Request_Submitted_Confirmation.png', label: 'Join Request Outcome' }
     ]
   },
   {
     image: 'Figure_6_My_Trips_and_Driver_Review_Outcomes.png',
     title: 'Figure 6. My Trips and Driver Review Outcomes',
     panels: [
-      { image: '10_My_Trips_All_Outcomes.png', label: 'My Trips Outcomes' },
-      { image: '16_Driver_Decision_Accepted_Outcome.png', label: 'Driver Review Outcome' }
+      { image: '10_My_Trips_All_Records.png', label: 'My Trips Outcomes' },
+      { image: '25_Driver_Trip_Workflow_Completed.png', label: 'Driver Workflow Completed' }
     ]
   }
 ];
@@ -95,12 +105,9 @@ function clearCaptureDir() {
 function writeFocusedPage(page, index) {
   const sourcePath = page.source.split(/[?#]/)[0];
   if (!page.focusCss) {
-    return path.join(root, sourcePath);
+    return path.join(htmlRoot, sourcePath);
   }
-  let html = fs.readFileSync(path.join(root, sourcePath), 'utf8');
-  html = html.replace('href="./styles.css"', 'href="../styles.css"');
-  html = html.replace(/href="\.\//g, 'href="../');
-  html = html.replace(/src="\.\/Pic\//g, 'src="../Pic/');
+  let html = fs.readFileSync(path.join(htmlRoot, sourcePath), 'utf8');
   const focusStyle = `<style id="capture-focus">${page.focusCss}</style>`;
   html = html.replace('</head>', `${focusStyle}</head>`);
   const captureName = `${String(index + 1).padStart(2, '0')}-${page.image.replace(/\.png$/i, '.html')}`;

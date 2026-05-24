@@ -1,0 +1,107 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Trips - NeighbourLink Static Prototype</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./find-a-ride.html">
+          <span class="brand-mark">NL</span>
+          <span>
+            <strong>NeighbourLink</strong>
+            <span class="brand-subtitle">Reduced-Budget Stage 2 Prototype</span>
+          </span>
+        </a>
+        <nav class="nav-links">
+  <a class="nav-link " href="./find-a-ride.html">Find a Ride</a>
+  <a class="nav-link is-active" href="./my-trips.html">My Trips</a>
+  <a class="nav-link " href="./rider-settings.html">Settings</a>
+  <a class="nav-link" href="./index.html">Log Out</a>
+</nav>
+      </div>
+    </header>
+    <main class="page-wrap">
+      <section class="hero-card">
+        <span class="eyebrow">Rider Prototype Surface</span>
+        <h1>My Trips</h1>
+        <p>Notifications and trip records stay separate so rider updates remain easy to follow.</p>
+      </section>
+      <section class="panel">
+  <h2>Notifications</h2>
+  <div class="results-grid">
+    <article class="notice notice-success anchor-section notification-item" id="join-request-submitted" data-notification-key="join-request-main" data-default-read="false">
+      <span class="pill pending notification-read-pill" id="notification-read-pill">Unread</span>
+      <h3 class="notification-title" id="notification-title">Join Request Submitted</h3>
+      <p class="notification-summary" id="notification-summary">Your join request was submitted. Full details are available in trip records.</p>
+      <p class="muted"><strong>Time:</strong> <span class="notification-time" id="notification-time">Just now</span></p>
+      <div class="card-actions">
+        <button class="btn btn-secondary notification-toggle-read-btn" id="notification-toggle-read-btn" type="button">Mark as Read</button>
+      </div>
+    </article>
+    <article class="notice notice-warning notification-item" data-notification-key="trip-confirmed-601" data-default-read="true">
+      <span class="pill confirmed notification-read-pill">Read</span>
+      <h3 class="notification-title">Trip Confirmed</h3>
+      <p class="notification-summary">Ride Match #601 is confirmed and moved to completed records.</p>
+      <p class="muted"><strong>Time:</strong> <span class="notification-time">2026-04-09 07:42</span></p>
+      <div class="card-actions">
+        <button class="btn btn-secondary notification-toggle-read-btn" type="button">Mark as Unread</button>
+      </div>
+    </article>
+    <article class="notice notice-danger notification-item" data-notification-key="join-request-rejected-498" data-default-read="false">
+      <span class="pill pending notification-read-pill">Unread</span>
+      <h3 class="notification-title">Join Request Rejected</h3>
+      <p class="notification-summary">Join Request #498 was rejected due to seat unavailability.</p>
+      <p class="muted"><strong>Time:</strong> <span class="notification-time">2026-04-08 18:10</span></p>
+      <div class="card-actions">
+        <button class="btn btn-secondary notification-toggle-read-btn" type="button">Mark as Read</button>
+      </div>
+    </article>
+    <article class="notice notice-success notification-item" data-notification-key="settings-payment-updated" data-default-read="true">
+      <span class="pill confirmed notification-read-pill">Read</span>
+      <h3 class="notification-title">Payment Preference Updated</h3>
+      <p class="notification-summary">Your rider payment preference was saved successfully.</p>
+      <p class="muted"><strong>Time:</strong> <span class="notification-time">2026-04-07 10:24</span></p>
+      <div class="card-actions">
+        <button class="btn btn-secondary notification-toggle-read-btn" type="button">Mark as Unread</button>
+      </div>
+    </article>
+  </div>
+</section>
+<section class="panel anchor-section" id="trip-records">
+  <h2>Trip Records</h2>
+  <div class="chip-row">
+    <a class="chip-link trip-filter-link is-active" data-filter="all" href="./my-trips.html#all">All</a>
+    <a class="chip-link trip-filter-link" data-filter="in-progress" href="./my-trips.html#in-progress">In Progress</a>
+    <a class="chip-link trip-filter-link" data-filter="completed" href="./my-trips.html#completed">Completed</a>
+  </div>
+  <div class="results-grid" id="orders-grid">
+    <article class="card" id="primary-order-card" data-order-type="in-progress">
+      <span class="pill pending" id="primary-order-pill">In Progress</span>
+      <h3>Record #501</h3>
+      <p><strong>Route:</strong> <span id="primary-order-route">Clayton to Melbourne CBD</span></p>
+      <p><strong>Status:</strong> <span id="primary-order-status">Pending driver decision</span></p>
+      <div class="card-actions">
+        <a class="btn btn-secondary" id="record-501-link" href="./rider-record-501-details.html">View Details</a>
+      </div>
+    </article>
+    <article class="card" id="secondary-order-card" data-order-type="completed">
+      <span class="pill confirmed">Completed</span>
+      <h3>Record #601</h3>
+      <p><strong>Driver:</strong> Emma Driver</p>
+      <p><strong>Status:</strong> Confirmed trip outcome</p>
+      <div class="card-actions">
+        <a class="btn btn-secondary" id="record-601-link" href="./rider-record-601-details.html">View Details</a>
+      </div>
+    </article>
+  </div>
+</section>
+    </main>
+  </div>
+  <script src="../js/prototype-context.js"></script>
+</body>
+</html>

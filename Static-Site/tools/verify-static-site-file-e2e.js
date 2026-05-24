@@ -3,13 +3,19 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
+const htmlRoot = path.join(root, 'html');
+const jsRoot = path.join(root, 'js');
 
-function read(file) {
-  return fs.readFileSync(path.join(root, file), 'utf8');
+function readHtml(file) {
+  return fs.readFileSync(path.join(htmlRoot, file), 'utf8');
+}
+
+function readJs(file) {
+  return fs.readFileSync(path.join(jsRoot, file), 'utf8');
 }
 
 function expectLink(file, text, href) {
-  const html = read(file);
+  const html = readHtml(file);
   const escapedHref = href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const linkPattern = new RegExp(`<a[^>]*href="\\./${escapedHref}"[^>]*>\\s*${escapedText}\\s*<\\/a>`, 'i');
@@ -19,21 +25,21 @@ function expectLink(file, text, href) {
 }
 
 function expectContains(file, snippet, label) {
-  const html = read(file);
+  const html = readHtml(file);
   if (!html.includes(snippet)) {
     throw new Error(`${file} is missing ${label}`);
   }
 }
 
 function expectNotContains(file, snippet, label) {
-  const html = read(file);
+  const html = readHtml(file);
   if (html.includes(snippet)) {
     throw new Error(`${file} still contains ${label}`);
   }
 }
 
 function verifyAuthFlowScript() {
-  const source = read('auth-flow.js');
+  const source = readJs('auth-flow.js');
   const domContentLoaded = [];
 
   function createField(id, name, value = '') {
@@ -182,8 +188,8 @@ expectContains('register.html', 'id="register-form"', 'register form');
 expectContains('register.html', 'id="register-role"', 'register role selector');
 expectContains('register.html', 'id="register-submit"', 'register submit button');
 expectLink('register.html', 'Back to Log In', 'index.html');
-expectContains('index.html', '<script src="./auth-flow.js"></script>', 'auth-flow script reference');
-expectContains('register.html', '<script src="./auth-flow.js"></script>', 'auth-flow script reference');
+expectContains('index.html', '<script src="../js/auth-flow.js"></script>', 'auth-flow script reference');
+expectContains('register.html', '<script src="../js/auth-flow.js"></script>', 'auth-flow script reference');
 expectLink('find-a-ride.html', 'Settings', 'rider-settings.html');
 expectLink('my-trips.html', 'Settings', 'rider-settings.html');
 expectLink('driver-hub.html', 'Settings', 'driver-settings.html');
@@ -192,11 +198,11 @@ expectContains('rider-settings.html', 'id="settings-password-form"', 'rider sett
 expectContains('rider-settings.html', 'id="settings-payment-form"', 'rider settings payment form');
 expectContains('driver-settings.html', 'id="settings-password-form"', 'driver settings password form');
 expectContains('driver-settings.html', 'id="settings-payment-form"', 'driver settings payment form');
-expectContains('rider-settings.html', '<script src="./prototype-context.js"></script>', 'rider settings script reference');
-expectContains('driver-settings.html', '<script src="./prototype-context.js"></script>', 'driver settings script reference');
-expectContains('driver-accepted-details.html', '<script src="./prototype-context.js"></script>', 'accepted details script reference');
-expectContains('driver-rejected-details.html', '<script src="./prototype-context.js"></script>', 'rejected details script reference');
-expectContains('driver-decision-outcome.html', '<script src="./prototype-context.js"></script>', 'driver outcome script reference');
+expectContains('rider-settings.html', '<script src="../js/prototype-context.js"></script>', 'rider settings script reference');
+expectContains('driver-settings.html', '<script src="../js/prototype-context.js"></script>', 'driver settings script reference');
+expectContains('driver-accepted-details.html', '<script src="../js/prototype-context.js"></script>', 'accepted details script reference');
+expectContains('driver-rejected-details.html', '<script src="../js/prototype-context.js"></script>', 'rejected details script reference');
+expectContains('driver-decision-outcome.html', '<script src="../js/prototype-context.js"></script>', 'driver outcome script reference');
 expectLink('find-a-ride.html', 'Continue to Destination', 'find-a-ride.html#destination');
 expectLink('find-a-ride.html', 'Continue to Trip Date', 'find-a-ride.html#trip-date');
 expectLink('find-a-ride.html', 'Search Ride Offers', 'search-results.html');
@@ -208,7 +214,9 @@ expectNotContains('search-results.html', 'Fallback path', 'fallback path content
 expectLink('ride-offer-details.html', 'Submit Join Request', 'my-trips.html#join-request-submitted');
 expectContains('my-trips.html', 'Notifications', 'notifications section');
 expectContains('my-trips.html', 'Trip Records', 'trip records section');
-expectLink('my-trips.html', 'Open Trip Records', 'my-trips.html#trip-records');
+expectContains('my-trips.html', 'notification-item', 'multi-notification list');
+expectContains('my-trips.html', 'Mark as Read', 'notification read action');
+expectNotContains('my-trips.html', 'Open Trip Records', 'legacy notification deep-link action');
 expectLink('my-trips.html', 'View Details', 'rider-record-501-details.html');
 expectLink('my-trips.html', 'View Details', 'rider-record-601-details.html');
 expectNotContains('my-trips.html', '<h2>Join Requests</h2>', 'legacy join requests standalone section');

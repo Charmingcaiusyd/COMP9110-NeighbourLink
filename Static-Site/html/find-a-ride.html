@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find a Ride - NeighbourLink Static Prototype</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./find-a-ride.html">
+          <span class="brand-mark">NL</span>
+          <span>
+            <strong>NeighbourLink</strong>
+            <span class="brand-subtitle">Reduced-Budget Stage 2 Prototype</span>
+          </span>
+        </a>
+        <nav class="nav-links">
+  <a class="nav-link is-active" href="./find-a-ride.html">Find a Ride</a>
+  <a class="nav-link " href="./my-trips.html">My Trips</a>
+  <a class="nav-link " href="./rider-settings.html">Settings</a>
+  <a class="nav-link" href="./index.html">Log Out</a>
+</nav>
+      </div>
+    </header>
+    <main class="page-wrap">
+      <section class="hero-card">
+        <span class="eyebrow">Rider Prototype Surface</span>
+        <h1>Find a Ride</h1>
+        <p>Use the step controls to move between Origin, Destination, and Trip Date while previewing searchable OpenStreetMap context for the trip.</p>
+      </section>
+      <section class="panel">
+  <div class="stepper" aria-label="Find a Ride steps">
+    <a class="step is-active" data-step="origin" href="./find-a-ride.html#origin"><strong>Origin</strong></a>
+    <a class="step" data-step="destination" href="./find-a-ride.html#destination"><strong>Destination</strong></a>
+    <a class="step" data-step="trip-date" href="./find-a-ride.html#trip-date"><strong>Trip Date</strong></a>
+  </div>
+</section>
+<section class="two-column anchor-section flow-panel is-visible" id="origin">
+  <section class="panel">
+    <h2>Origin (pickup)</h2>
+    <div class="form-grid">
+      <label>Suburb or landmark<input id="origin-search" type="text" value="Clayton Station Gate 2"></label>
+      <div class="search-assist">
+        <p class="field-hint">Search a real place or choose a suggested pickup point.</p>
+        <div class="suggestion-list" id="origin-suggestions" aria-live="polite"></div>
+      </div>
+      <label>Nearby meeting hint<textarea>Monash bus interchange, pickup lane beside the station entrance.</textarea></label>
+      <div class="step-actions">
+        <a class="btn" href="./find-a-ride.html#destination">Continue to Destination</a>
+      </div>
+    </div>
+  </section>
+  <aside class="route-card">
+    <h2>Route context</h2>
+    <iframe id="origin-map" class="map-frame" title="Origin OpenStreetMap preview" loading="lazy"></iframe>
+    <p class="map-caption" id="origin-map-caption">OpenStreetMap preview for the selected pickup area.</p>
+    <div class="route-points">
+      <div class="route-stop">
+        <strong>Pickup zone</strong>
+        <span id="origin-label">Clayton Station Gate 2</span>
+      </div>
+      <div class="route-stop">
+        <strong>Rider note</strong>
+        <span>Short walk from the bus interchange and station entrance.</span>
+      </div>
+    </div>
+  </aside>
+</section>
+<section class="two-column anchor-section flow-panel" id="destination">
+  <section class="panel">
+    <h2>Destination</h2>
+    <div class="summary-box">
+      <p><strong>Origin:</strong> <span id="destination-origin-summary">Clayton Station Gate 2</span></p>
+    </div>
+    <div class="form-grid">
+      <label>Destination suburb<input id="destination-search" type="text" value="Southern Cross Station"></label>
+      <div class="search-assist">
+        <p class="field-hint">Search a real destination or select a matching city stop.</p>
+        <div class="suggestion-list" id="destination-suggestions" aria-live="polite"></div>
+      </div>
+      <label>Optional destination note<textarea>Southern Cross precinct, walking distance to the office tower.</textarea></label>
+      <div class="step-actions">
+        <a class="btn btn-secondary" href="./find-a-ride.html#origin">Back</a>
+        <a class="btn" href="./find-a-ride.html#trip-date">Continue to Trip Date</a>
+      </div>
+    </div>
+  </section>
+  <aside class="route-card">
+    <h2>Destination context</h2>
+    <iframe id="destination-map" class="map-frame" title="Destination OpenStreetMap preview" loading="lazy"></iframe>
+    <p class="map-caption" id="destination-map-caption">OpenStreetMap preview for the selected destination area.</p>
+    <div class="route-points">
+      <div class="route-stop">
+        <strong>Destination area</strong>
+        <span id="destination-label">Southern Cross Station</span>
+      </div>
+      <div class="route-stop">
+        <strong>Arrival note</strong>
+        <span>Walking distance to the office tower and train interchange.</span>
+      </div>
+    </div>
+  </aside>
+</section>
+<section class="two-column anchor-section flow-panel" id="trip-date">
+  <section class="panel">
+    <h2>Trip date and rider details</h2>
+    <div class="summary-box">
+      <p><strong>Origin:</strong> <span id="trip-origin-summary">Clayton Station Gate 2</span></p>
+      <p><strong>Destination:</strong> <span id="trip-destination-summary">Southern Cross Station</span></p>
+    </div>
+    <div class="form-grid">
+      <label>Trip date<input id="trip-date-input" type="date" value="2026-04-09"></label>
+      <label>Preferred departure time<input id="trip-time-input" type="time" value="07:30"></label>
+      <label>Passengers
+        <select id="trip-passengers-input">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+        </select>
+      </label>
+      <label>Notes to driver<textarea id="trip-notes-input">Commuting to the city and can meet at the Clayton station pickup area.</textarea></label>
+      <div class="step-actions">
+        <a class="btn btn-secondary" href="./find-a-ride.html#destination">Back</a>
+        <a class="btn" id="search-results-link" href="./search-results.html">Search Ride Offers</a>
+      </div>
+    </div>
+  </section>
+  <aside class="route-card">
+    <h2>Trip planning summary</h2>
+    <iframe id="summary-map" class="map-frame" title="Trip summary OpenStreetMap preview" loading="lazy"></iframe>
+    <p class="map-caption" id="summary-map-caption">OpenStreetMap route context for the selected rider trip.</p>
+    <div class="route-points">
+      <div class="route-stop">
+        <strong>Departure window</strong>
+        <span>Weekday commute around 7:30 AM</span>
+      </div>
+      <div class="route-stop">
+        <strong>Primary goal</strong>
+        <span>Join an existing offer when a suitable match is available.</span>
+      </div>
+    </div>
+  </aside>
+</section>
+    </main>
+  </div>
+  <script src="../js/find-a-ride-flow.js"></script>
+</body>
+</html>

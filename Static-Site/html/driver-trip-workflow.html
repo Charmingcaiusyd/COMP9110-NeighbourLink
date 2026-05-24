@@ -1,0 +1,79 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver Trip Workflow - NeighbourLink Static Prototype</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./driver-hub.html">
+          <span class="brand-mark">NL</span>
+          <span>
+            <strong>NeighbourLink</strong>
+            <span class="brand-subtitle">Reduced-Budget Stage 2 Prototype</span>
+          </span>
+        </a>
+        <nav class="nav-links">
+  <a class="nav-link " href="./driver-hub.html">Driver Review</a>
+  <a class="nav-link is-active" href="./driver-trip-workflow.html">Trip Workflow</a>
+  <a class="nav-link " href="./driver-settings.html">Settings</a>
+  <a class="nav-link" href="./index.html">Log Out</a>
+</nav>
+      </div>
+    </header>
+    <main class="page-wrap">
+      <section class="hero-card">
+        <span class="eyebrow">Driver Prototype Surface</span>
+        <h1>Driver Trip Workflow</h1>
+        <p>After accepting a join request, drivers can follow one guided workflow step at a time, with each action refreshing into the next state.</p>
+      </section>
+      <section class="panel">
+  <span class="pill pending" id="workflow-status-pill">Ready</span>
+  <h2 id="workflow-title">Trip Execution for Accepted Request</h2>
+  <p id="workflow-status-text">Ready to begin segment 1: depart to the pickup point.</p>
+  <div class="request-summary-grid">
+    <div class="summary-box">
+      <p><strong>Join Request:</strong> <span id="workflow-request-id">#501</span></p>
+      <p><strong>Rider:</strong> <span id="workflow-rider">Daniel Rider</span></p>
+      <p><strong>Driver:</strong> <span id="workflow-driver">Emma Driver</span></p>
+    </div>
+    <div class="summary-box">
+      <p><strong>Route:</strong> <span id="workflow-route">Clayton to Melbourne CBD</span></p>
+      <p><strong>Pickup point:</strong> <span id="workflow-pickup">Clayton Station Gate 2</span></p>
+      <p><strong>Destination:</strong> <span id="workflow-destination">Melbourne CBD drop-off zone</span></p>
+    </div>
+    <div class="summary-box">
+      <p><strong>Step status:</strong> <span id="workflow-step-status">Waiting to depart</span></p>
+      <p><strong>Current segment:</strong> <span id="workflow-segment-label">Segment 1: Driver to Pickup</span></p>
+      <p><strong>Use:</strong> Click the single action button to refresh to the next stage.</p>
+    </div>
+  </div>
+</section>
+<section class="panel" id="workflow-route-panel">
+  <h2 id="workflow-map-title">Segment 1: Driver to Pickup</h2>
+  <p class="muted" id="workflow-map-subtitle">OpenStreetMap preview updates after each action.</p>
+  <div class="request-map-wrap">
+    <p class="map-caption" id="workflow-map-caption">OpenStreetMap preview for the current segment</p>
+    <iframe class="map-frame request-map-frame" id="workflow-map-main" title="Trip workflow map preview" loading="lazy"></iframe>
+  </div>
+  <div class="card-actions">
+    <a class="btn" id="workflow-next-stage-link" href="./driver-trip-workflow.html">Depart to Pickup</a>
+  </div>
+</section>
+<section class="panel notice notice-success is-hidden" id="workflow-complete-panel">
+  <span class="pill confirmed">Completed</span>
+  <h2>Trip Completed</h2>
+  <p>The driver has arrived at the destination and the accepted trip workflow is complete.</p>
+  <div class="card-actions">
+    <a class="btn" id="workflow-complete-back-link" href="./driver-hub.html#accepted-records">Back</a>
+  </div>
+</section>
+    </main>
+  </div>
+  <script src="../js/prototype-context.js"></script>
+</body>
+</html>

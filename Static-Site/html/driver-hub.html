@@ -1,0 +1,127 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver Review - NeighbourLink Static Prototype</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./driver-hub.html">
+          <span class="brand-mark">NL</span>
+          <span>
+            <strong>NeighbourLink</strong>
+            <span class="brand-subtitle">Reduced-Budget Stage 2 Prototype</span>
+          </span>
+        </a>
+        <nav class="nav-links">
+  <a class="nav-link is-active" href="./driver-hub.html">Driver Review</a>
+  <a class="nav-link " href="./driver-trip-workflow.html">Trip Workflow</a>
+  <a class="nav-link " href="./driver-settings.html">Settings</a>
+  <a class="nav-link" href="./index.html">Log Out</a>
+</nav>
+      </div>
+    </header>
+    <main class="page-wrap">
+      <section class="hero-card">
+        <span class="eyebrow">Driver Prototype Surface</span>
+        <h1>Driver Review</h1>
+        <p>The driver prototype is now reduced to request review plus accepted and rejected history, without extra trip-management surfaces.</p>
+      </section>
+      <section class="panel anchor-section" id="join-request-review">
+  <h2>Join Request Review</h2>
+  <div class="results-grid">
+    <article class="card" data-pending-request="501" data-rider="Daniel Rider" data-driver="Emma Driver" data-route="Clayton to Melbourne CBD" data-seats="1" data-available="2">
+      <span class="pill pending">Pending</span>
+      <h3>Join Request #501</h3>
+      <p><strong>Rider:</strong> Daniel Rider</p>
+      <p><strong>Offer:</strong> Clayton to Melbourne CBD at 07:30</p>
+      <p><strong>Requested seats:</strong> 1</p>
+      <p><strong>Available seats:</strong> 2</p>
+      <div class="request-map-wrap">
+        <p class="map-caption">OpenStreetMap trip preview (Start to End)</p>
+        <iframe class="map-frame request-map-frame" title="Join Request 501 trip preview map" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=144.93%2C-37.94%2C145.14%2C-37.80&layer=mapnik&marker=-37.9263641%2C145.1230003"></iframe>
+      </div>
+      <div class="card-actions">
+        <a class="btn driver-review-decision-link" data-request="501" data-rider="Daniel Rider" data-driver="Emma Driver" data-route="Clayton to Melbourne CBD" data-seats="1" data-available="2" data-decision="accepted" href="./driver-decision-outcome.html">Accept Request</a>
+        <a class="btn btn-secondary driver-review-decision-link" data-request="501" data-rider="Daniel Rider" data-driver="Emma Driver" data-route="Clayton to Melbourne CBD" data-seats="1" data-available="2" data-decision="rejected" href="./driver-decision-outcome.html">Reject Request</a>
+      </div>
+    </article>
+    <article class="card" data-pending-request="504" data-rider="Olivia Chen" data-driver="Liam Driver" data-route="Clayton to Docklands" data-seats="1" data-available="1">
+      <span class="pill pending">Pending</span>
+      <h3>Join Request #504</h3>
+      <p><strong>Rider:</strong> Olivia Chen</p>
+      <p><strong>Offer:</strong> Clayton to Docklands at 08:05</p>
+      <p><strong>Requested seats:</strong> 1</p>
+      <p><strong>Available seats:</strong> 1</p>
+      <div class="request-map-wrap">
+        <p class="map-caption">OpenStreetMap trip preview (Start to End)</p>
+        <iframe class="map-frame request-map-frame" title="Join Request 504 trip preview map" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=144.93%2C-37.94%2C145.14%2C-37.80&layer=mapnik&marker=-37.9263641%2C145.1230003"></iframe>
+      </div>
+      <div class="card-actions">
+        <a class="btn driver-review-decision-link" data-request="504" data-rider="Olivia Chen" data-driver="Liam Driver" data-route="Clayton to Docklands" data-seats="1" data-available="1" data-decision="accepted" href="./driver-decision-outcome.html">Accept Request</a>
+        <a class="btn btn-secondary driver-review-decision-link" data-request="504" data-rider="Olivia Chen" data-driver="Liam Driver" data-route="Clayton to Docklands" data-seats="1" data-available="1" data-decision="rejected" href="./driver-decision-outcome.html">Reject Request</a>
+      </div>
+    </article>
+  </div>
+</section>
+<section class="panel anchor-section" id="accepted-records">
+  <h2>Accepted</h2>
+  <div class="results-grid">
+    <article class="card">
+      <span class="pill confirmed">Accepted</span>
+      <h3>Join Request #501</h3>
+      <p><strong>Rider:</strong> Daniel Rider</p>
+      <p><strong>Route:</strong> Clayton to Melbourne CBD</p>
+      <p><strong>Status:</strong> Accepted and matched</p>
+      <div class="card-actions">
+        <a class="btn driver-workflow-link" data-request="501" data-rider="Daniel Rider" data-driver="Emma Driver" data-route="Clayton to Melbourne CBD" data-seats="1" data-meeting="Clayton Station Gate 2" href="./driver-trip-workflow.html">Start Trip Workflow</a>
+        <a class="btn btn-secondary driver-accepted-details-link" data-request="501" data-rider="Daniel Rider" data-driver="Emma Driver" data-route="Clayton to Melbourne CBD" data-seats="1" data-meeting="Clayton Station Gate 2" href="./driver-accepted-details.html">View Details</a>
+      </div>
+    </article>
+    <article class="card">
+      <span class="pill confirmed">Accepted</span>
+      <h3>Join Request #504</h3>
+      <p><strong>Rider:</strong> Olivia Chen</p>
+      <p><strong>Route:</strong> Clayton to Docklands</p>
+      <p><strong>Status:</strong> Accepted and matched</p>
+      <div class="card-actions">
+        <a class="btn driver-workflow-link" data-request="504" data-rider="Olivia Chen" data-driver="Liam Driver" data-route="Clayton to Docklands" data-seats="1" data-meeting="Monash northern pickup zone" href="./driver-trip-workflow.html">Start Trip Workflow</a>
+        <a class="btn btn-secondary driver-accepted-details-link" data-request="504" data-rider="Olivia Chen" data-driver="Liam Driver" data-route="Clayton to Docklands" data-seats="1" data-meeting="Monash northern pickup zone" href="./driver-accepted-details.html">View Details</a>
+      </div>
+    </article>
+  </div>
+</section>
+<section class="panel anchor-section" id="rejected-records">
+  <h2>Rejected</h2>
+  <div class="results-grid">
+    <article class="card">
+      <span class="pill rejected">Rejected</span>
+      <h3>Join Request #498</h3>
+      <p><strong>Rider:</strong> Mia Santos</p>
+      <p><strong>Route:</strong> Clayton to Docklands</p>
+      <p><strong>Status:</strong> Rejected because the car was full</p>
+      <div class="card-actions">
+        <a class="btn btn-secondary driver-rejected-details-link" data-request="498" data-rider="Mia Santos" data-driver="Liam Driver" data-route="Clayton to Docklands" data-seats="1" data-reason="Vehicle already full at decision time" href="./driver-rejected-details.html">View Details</a>
+      </div>
+    </article>
+    <article class="card">
+      <span class="pill rejected">Rejected</span>
+      <h3>Join Request #499</h3>
+      <p><strong>Rider:</strong> Zoe Patel</p>
+      <p><strong>Route:</strong> Clayton to Melbourne CBD</p>
+      <p><strong>Status:</strong> Rejected because timing no longer matched</p>
+      <div class="card-actions">
+        <a class="btn btn-secondary driver-rejected-details-link" data-request="499" data-rider="Zoe Patel" data-driver="Emma Driver" data-route="Clayton to Melbourne CBD" data-seats="1" data-reason="Departure timing changed before confirmation" href="./driver-rejected-details.html">View Details</a>
+      </div>
+    </article>
+  </div>
+</section>
+    </main>
+  </div>
+  <script src="../js/prototype-context.js"></script>
+</body>
+</html>

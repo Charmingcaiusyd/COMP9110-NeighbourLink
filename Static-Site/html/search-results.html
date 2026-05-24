@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Results - NeighbourLink Static Prototype</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./find-a-ride.html">
+          <span class="brand-mark">NL</span>
+          <span>
+            <strong>NeighbourLink</strong>
+            <span class="brand-subtitle">Reduced-Budget Stage 2 Prototype</span>
+          </span>
+        </a>
+        <nav class="nav-links">
+  <a class="nav-link is-active" href="./find-a-ride.html">Find a Ride</a>
+  <a class="nav-link " href="./my-trips.html">My Trips</a>
+  <a class="nav-link " href="./rider-settings.html">Settings</a>
+  <a class="nav-link" href="./index.html">Log Out</a>
+</nav>
+      </div>
+    </header>
+    <main class="page-wrap">
+      <section class="hero-card">
+        <span class="eyebrow">Rider Prototype Surface</span>
+        <h1>Search Results</h1>
+        <p>Two existing ride offers are shown so the rider can compare timing and seats before opening the selected offer details.</p>
+      </section>
+      <section class="summary-box">
+  <h2>Search Summary</h2>
+  <p><strong>From:</strong> <span id="results-from">Clayton</span></p>
+  <p><strong>To:</strong> <span id="results-to">Melbourne</span></p>
+  <p><strong>Date:</strong> <span id="results-date">2026-04-09</span></p>
+  <p><strong>Time:</strong> <span id="results-time">07:30</span></p>
+  <p><strong>Passengers:</strong> <span id="results-passengers">1</span></p>
+  <div class="helper-links">
+    <a class="chip-link" id="edit-trip-link" href="./find-a-ride.html#trip-date">Edit trip details</a>
+    <a class="chip-link" id="edit-destination-link" href="./find-a-ride.html#destination">Change destination</a>
+  </div>
+</section>
+<section class="notice notice-danger is-hidden" id="matching-failed">
+  <h2>Rider Matching Failed</h2>
+  <p id="matching-failed-message">No suitable existing ride offer was found for the selected trip details.</p>
+  <div class="card-actions">
+    <a class="btn btn-secondary" id="failed-edit-trip-link" href="./find-a-ride.html#trip-date">Edit trip details</a>
+    <a class="btn" id="failed-start-search-link" href="./find-a-ride.html">Start a New Search</a>
+  </div>
+</section>
+<section class="panel">
+  <h2>Matching Ride Offers</h2>
+  <div class="results-grid">
+    <article class="card" data-offer-card="emma">
+      <span class="pill confirmed">2 seats left</span>
+      <h3>Emma Driver</h3>
+      <p><strong>Route:</strong> Clayton to Melbourne CBD</p>
+      <p><strong>Departure:</strong> 2026-04-09 at 07:30</p>
+      <p><strong>Meeting point:</strong> Clayton Station Gate 2</p>
+      <p class="context-line" data-offer-context="emma">Good fit for CBD-bound weekday commuters.</p>
+      <div class="card-actions">
+        <a class="btn offer-details-link" data-offer="emma" href="./ride-offer-details.html">View Details</a>
+      </div>
+    </article>
+    <article class="card" data-offer-card="liam">
+      <span class="pill pending">1 seat left</span>
+      <h3>Liam Driver</h3>
+      <p><strong>Route:</strong> Clayton to Docklands</p>
+      <p><strong>Departure:</strong> 2026-04-09 at 08:05</p>
+      <p><strong>Meeting point:</strong> Monash northern pickup zone</p>
+      <p class="context-line" data-offer-context="liam">Better fit for Docklands or harbour-side destinations.</p>
+      <div class="card-actions">
+        <a class="btn btn-secondary offer-details-link" data-offer="liam" href="./ride-offer-details.html">View Details</a>
+      </div>
+    </article>
+  </div>
+</section>
+    </main>
+  </div>
+  <script src="../js/prototype-context.js"></script>
+</body>
+</html>
