@@ -1,142 +1,89 @@
-# Static-Site
+﻿# Static-Site
 
-`Static-Site` is a fully front-end NeighbourLink demonstration that mirrors the current project feature set and current front-end design without any backend service owned by the project.
+`Static-Site` is the final Stage 2 submission-facing NeighbourLink prototype.
 
-It is designed for browser-only walkthroughs, demos, marking, and presentation use.
+It is intentionally implemented as a **browser-openable static page set** so it can be opened directly in a browser without any backend, database, build step, or local persistence. Lightweight client-side JavaScript is used only for rider-step switching and OpenStreetMap place preview/search inside `find-a-ride.html`.
 
-## Visual documentation
+## Purpose
 
-- Full screenshot walkthrough: [docs/FEATURE_SCREENSHOT_WALKTHROUGH.md](./docs/FEATURE_SCREENSHOT_WALKTHROUGH.md)
-- Screenshot index: [Pic/README.md](./Pic/README.md)
-- Screenshot assets folder: `Static-Site/Pic`
-- The screenshot pack is intentionally state-rich and now includes alternate driver/rider outcomes such as confirmed-payment entry states, password-reset success, and driver rejection handling.
+This prototype is designed to support:
+
+- Stage 2 marking
+- low-fidelity walkthroughs
+- UML alignment checks
+- report screenshots and presentation evidence
+
+The prototype now focuses only on the **reduced-budget core**:
+
+- rider finds an existing ride offer
+- rider reviews ride-offer details
+- rider submits a join request
+- driver accepts or rejects the join request
+- the system shows visible trip outcomes
+- if direct matching fails, the rider sees a clear no-match result in search results
 
 ## How to open
 
-1. Open [index.html](./index.html) directly in a desktop browser.
-2. Start from `#/login` automatically, or open routes manually after the hash if needed.
-3. Use the built-in demo accounts shown on the sign-in page.
-4. Keep internet access enabled if you want live map search, reverse lookup, and route previews.
-5. All interaction data is hardcoded first, then persisted locally in browser `localStorage`.
+1. Open [index.html](./index.html) directly in any desktop browser.
+2. Use the lightweight sign-in or register form to enter the Rider or Driver walkthrough.
+3. No backend or storage is required; simple client-side logic routes the page to the correct static surface.
 
-## Demo accounts
+## Representative page set
 
-- Rider: `daniel.rider@example.com / 123456`
-- Rider: `maria.rider@example.com / demo1234`
-- Rider: `olivia.rider@example.com / demo1234`
-- Driver: `emma.driver@example.com / demo1234`
-- Driver: `liam.driver@example.com / demo1234`
-- Driver: `sophie.driver@example.com / demo1234`
+The prototype is intentionally centred on a compact representative page set:
 
-## Included feature coverage
+1. `index.html` - login entry
+2. `register.html` - registration entry
+3. `find-a-ride.html` - rider trip flow with simple step switching between origin, destination, and trip date
+4. `search-results.html` - matching ride offers
+5. `ride-offer-details.html` - rider review and join-request action
+6. `my-trips.html` - rider notifications and trip records
+7. `driver-hub.html` - driver review overview with join requests plus accepted and rejected records
+8. `driver-accepted-details.html` - accepted-record detail page
+9. `driver-rejected-details.html` - rejected-record detail page
+10. `driver-decision-outcome.html` - immediate accept/reject result page with auto-return
 
-This static demo keeps the current runtime direction and removes backend dependency only.
+## Design decisions retained in this version
 
-- Rider login and local registration
-- Unified `Find a Ride` entry
-- Live OpenStreetMap-based rider location flow:
-  - Leaflet map rendering
-  - Nominatim address search
-  - reverse lookup from map click
-  - OSRM route preview between pickup and destination
-- Automatic branch logic:
-  - if trip time is within 3 hours, search ride offers first
-  - if time is missing or the trip is beyond 3 hours, create a one-off ride request
-  - if an eligible search finds no suitable offer, automatically fall back to a one-off request
-- Search results and ride-offer details
-- Trust display before rider seat-request action
-- Join request submission
-- Rider `My Trips` unified order stream
-- Notifications
-- Review and accept driver offers for one-off requests
-- Payment demo page
-- Driver Hub:
-  - review / accept / reject join requests
-  - respond to open one-off ride requests
-  - inspect one-off response history
-- Account page:
-  - reset password
-  - add / remove / set default payment methods
-- Tutorial / training center for Rider and Driver walkthroughs via hidden direct route
+- Driver no longer has a duplicate rider-facing search page.
+- Driver no longer responds to one-off requests.
+- The prototype no longer includes trust, rating, profile, payment, tutorial, or account-management flows.
+- The fallback-request path has been removed from the static prototype surface.
+- When no suitable offer is available, the rider now sees a direct matching-failed result instead of opening a second path.
+- Route context is now shown through searchable OpenStreetMap previews inside the rider journey.
+- Rider trip criteria now carry forward through URL parameters so search results, offer details, and My Trips feel like one continuous walkthrough.
+- `My Trips` now separates notifications from trip records and uses lightweight front-end filter chips so join requests and confirmed trips can be demonstrated as focused outcome states on the same page.
+- `Driver Review` now keeps only the essential driver-side surfaces: pending join requests, accepted records, rejected records, and dedicated detail/result pages.
+- Accepting or rejecting a request now opens a dedicated result page, then automatically returns to `Driver Review` after 5 seconds.
 
-## Seeded demo density
+## Stage 2 alignment
 
-The static dataset is intentionally seeded with multiple records so the main demo lists do not look empty.
+This version is intended to be easier to defend against the Stage 2 brief because it is now:
 
-- default rider search returns 2 matching ride offers
-- rider notifications show 2 or more records
-- rider unified orders show multiple join-request and one-off records
-- rider one-off offer review includes multiple driver offers
-- driver pending join requests show 2 or more items
-- driver open one-off ride requests show 2 or more items
-- driver one-off offer history shows 2 or more items
-- account payment methods are pre-seeded with more than one saved card on the main demo accounts
+- browser-openable static pages with lightweight JS for step switching and map search
+- browser-openable with no setup
+- representative rather than overbuilt
+- clearly centred on the main confirmation workflow
+- easier to explain with a single main rider-driver coordination path
 
-## Intentional alignment with current code
+## Related documentation
 
-The static site follows the current product direction rather than old earlier versions, and its page structure/class styling is intentionally aligned to the current main front-end runtime.
+- [Full screenshot walkthrough](./docs/FEATURE_SCREENSHOT_WALKTHROUGH.md)
+- [Static-Site simplification and UML alignment notes](./docs/STATIC_SITE_SIMPLIFICATION_AND_UML.md)
+- [Revised Appendix A/B/C PlantUML source](./docs/APPENDIX_A_B_C_REVISED_PLANTUML.md)
+- [Screenshot index](./Pic/README.md)
 
-- `Profile` editing is removed
-- Driver flow now focuses on join-request decisions and one-off responses
-- `Account` only keeps password reset and payment methods
-- Navigation keeps route-style jumping, but uses browser hash routing so the demo still works from `file://`
-- Where the main runtime used OpenStreetMap support through backend proxy endpoints, this static site now calls the public map services directly from the browser
+## Recommended demonstration flow
 
-## Main routes
-
-- `#/login`
-- `#/register`
-- `#/`
-- `#/search-results`
-- `#/ride-offer-details/:id`
-- `#/my-trips`
-- `#/ride-requests/:id/offers`
-- `#/ride-confirmed`
-- `#/driver-hub`
-- `#/account`
-- `#/payment?rideMatchId=:id`
-- `#/tutorial`
-
-## Technical behaviour
-
-- No project backend process is required
-- No project database is required
-- No build step is required
-- State is stored only in the browser
-- Public map services are called directly from the browser:
-  - OpenStreetMap tiles through Leaflet
-  - Nominatim for address search and reverse lookup
-  - OSRM for route previews
-
-## Verification
-
-- Browser-level UI verification script: `Static-Site/tools/verify-static-site-ui.js`
-- Direct `file://` end-to-end verification script: `Static-Site/tools/verify-static-site-file-e2e.js`
-- Screenshot regeneration script aligned to the current UI: `Static-Site/tools/capture-static-site-screenshots.js`
-- Verified routes in the current static mirror:
-  - `#/login`
-  - `#/`
-  - `#/search-results`
-  - `#/ride-offer-details/:id`
-  - `#/my-trips`
-  - `#/payment?rideMatchId=:id`
-  - `#/tutorial`
-  - `#/driver-hub`
-  - `#/account`
-
-## Operational notes
-
-- `file://` direct opening has been verified with live map search, reverse lookup, and route preview
-- Because public map services are used directly, speed and availability can vary with network conditions or rate limiting
-- If a live lookup fails temporarily, the rider can still type or keep seeded demo locations and continue the business flow
-
-## Recommended demo flow
-
-1. Log in as `Maria Rider`
-2. Use `Find a Ride` for a same-day within-3-hours search
-3. Open a ride offer and submit a join request
-4. Return to `My Trips`
-5. Switch to `Emma Driver`
-6. Open `Driver Hub` and accept the pending join request
-7. Switch back to the rider and show confirmed status / payment
-8. Open `#/tutorial` directly to walk through the rider and driver demo scripts
+1. Open `index.html`
+2. Sign in with a Rider demo account such as `daniel.rider@example.com`
+3. Move through the three step-switched rider sections on `find-a-ride.html`
+4. Open `search-results.html`
+5. Open `ride-offer-details.html`
+6. Submit the join request into the confirmation section inside `my-trips.html`
+7. Review rider outcomes on `my-trips.html`
+8. Switch the `My Trips` filters to show join-request and confirmed outcome states
+9. Open `register.html` to show the role-based registration layout, if needed for the prototype walkthrough
+10. Return to `index.html` and sign in with a Driver demo account such as `emma.driver@example.com`
+11. Open `driver-hub.html` and review the pending join requests plus accepted and rejected record lists
+12. Open an accepted or rejected detail page, then trigger an accept or reject action to show the timed result page

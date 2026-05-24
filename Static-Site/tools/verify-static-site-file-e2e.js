@@ -1,243 +1,257 @@
+const fs = require('fs');
 const path = require('path');
-const { pathToFileURL } = require('url');
-const { chromium } = require('C:/Users/gs658/AppData/Local/Temp/nl-static-verify/node_modules/playwright-core');
+const vm = require('vm');
 
-(async () => {
-  const root = path.resolve(__dirname, '..');
-  const baseFileUrl = pathToFileURL(path.join(root, 'index.html')).href;
-  const browser = await chromium.launch({
-    executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-    headless: true,
-  });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1600 } });
-  const results = [];
+const root = path.resolve(__dirname, '..');
 
-  const record = (name, ok, detail) => results.push({ name, ok, detail });
-  const textVisible = async (text) => (await page.getByText(text, { exact: false }).count().catch(() => 0)) > 0;
-  const countCardsInSection = async (headingText) => {
-    const heading = page.getByRole('heading', { name: headingText, exact: true }).first();
-    const section = heading.locator('xpath=ancestor::section[1]');
-    return section.locator('.result-card').count();
-  };
-  const expectText = async (name, text, timeout = 15000) => {
-    try {
-      await page.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout });
-      record(name, true, `Found: ${text}`);
-      return true;
-    } catch (error) {
-      record(name, false, `Missing: ${text}`);
-      return false;
+function read(file) {
+  return fs.readFileSync(path.join(root, file), 'utf8');
+}
+
+function expectLink(file, text, href) {
+  const html = read(file);
+  const escapedHref = href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const linkPattern = new RegExp(`<a[^>]*href="\\./${escapedHref}"[^>]*>\\s*${escapedText}\\s*<\\/a>`, 'i');
+  if (!linkPattern.test(html)) {
+    throw new Error(`${file} does not contain link text "${text}" to ${href}`);
+  }
+}
+
+function expectContains(file, snippet, label) {
+  const html = read(file);
+  if (!html.includes(snippet)) {
+    throw new Error(`${file} is missing ${label}`);
+  }
+}
+
+function expectNotContains(file, snippet, label) {
+  const html = read(file);
+  if (html.includes(snippet)) {
+    throw new Error(`${file} still contains ${label}`);
+  }
+}
+
+function verifyAuthFlowScript() {
+  const source = read('auth-flow.js');
+  const domContentLoaded = [];
+
+  function createField(id, name, value = '') {
+    return {
+      id,
+      name,
+      value,
+      listeners: {},
+      addEventListener(type, handler) {
+        this.listeners[type] = handler;
+      },
+      dispatch(type) {
+        const handler = this.listeners[type];
+        if (handler) {
+          handler({ preventDefault() {}, target: this });
+        }
+      }
+    };
+  }
+
+  function createForm(id, fields) {
+    return {
+      id,
+      fields,
+      listeners: {},
+      addEventListener(type, handler) {
+        this.listeners[type] = handler;
+      },
+      getValue(name) {
+        const field = fields.find((item) => item.name === name);
+        return field ? field.value : null;
+      },
+      dispatchSubmit() {
+        const handler = this.listeners.submit;
+        if (handler) {
+          handler({ preventDefault() {} });
+        }
+      }
+    };
+  }
+
+  const loginEmail = createField('login-email', 'email', 'daniel.rider@example.com');
+  const loginPassword = createField('login-password', 'password', '123456');
+  const loginForm = createForm('login-form', [loginEmail, loginPassword]);
+
+  const registerRole = createField('register-role', 'role', 'rider');
+  const registerName = createField('register-name', 'name', 'Olivia Chen');
+  const registerEmail = createField('register-email', 'email', 'olivia.rider@example.com');
+  const registerPhone = createField('register-phone', 'phone', '0412 555 901');
+  const registerSuburb = createField('register-suburb', 'suburb', 'Clayton');
+  const registerPassword = createField('register-password', 'password', 'demo1234');
+  const registerForm = createForm('register-form', [
+    registerRole,
+    registerName,
+    registerEmail,
+    registerPhone,
+    registerSuburb,
+    registerPassword
+  ]);
+
+  const nodeMap = new Map([
+    ['login-form', loginForm],
+    ['login-email', loginEmail],
+    ['login-password', loginPassword],
+    ['register-form', registerForm],
+    ['register-role', registerRole],
+    ['register-name', registerName],
+    ['register-email', registerEmail],
+    ['register-phone', registerPhone],
+    ['register-suburb', registerSuburb],
+    ['register-password', registerPassword]
+  ]);
+
+  const location = { href: 'file:///index.html' };
+  const context = {
+    document: {
+      addEventListener(type, handler) {
+        if (type === 'DOMContentLoaded') {
+          domContentLoaded.push(handler);
+        }
+      },
+      getElementById(id) {
+        return nodeMap.get(id) || null;
+      }
+    },
+    window: { location },
+    URLSearchParams,
+    FormData: class {
+      constructor(form) {
+        this.form = form;
+      }
+      get(name) {
+        return this.form.getValue(name);
+      }
     }
   };
-  const gotoHash = async (hash, fresh = false) => {
-    const url = fresh ? `${baseFileUrl}?fresh=${Date.now()}${hash}` : `${baseFileUrl}${hash}`;
-    await page.goto(url, { waitUntil: 'load' });
-    await page.waitForTimeout(250);
-  };
-  const logoutIfVisible = async () => {
-    const count = await page.getByRole('button', { name: 'Log Out' }).count().catch(() => 0);
-    if (count > 0) {
-      await page.getByRole('button', { name: 'Log Out' }).click();
-      await page.waitForTimeout(250);
-    }
-  };
-  const loginFromFresh = async (email, password) => {
-    await page.evaluate(() => localStorage.removeItem('neighbourlink.static.site.session.v1')).catch(() => {});
-    await gotoHash('#/login', true);
-    await page.locator('input[name="email"]').fill(email);
-    await page.locator('input[name="password"]').fill(password);
-    await page.getByRole('button', { name: 'Log In' }).click();
-    await page.waitForTimeout(350);
-  };
 
-  await gotoHash('#/login', true);
-  await page.evaluate(() => localStorage.clear());
-  await page.reload({ waitUntil: 'load' });
-  await expectText('Direct file login page renders', 'User Login');
+  vm.createContext(context);
+  vm.runInContext(source, context, { filename: 'auth-flow.js' });
+  domContentLoaded.forEach((handler) => handler());
 
-  await loginFromFresh('daniel.rider@example.com', '123456');
-  record('Rider direct file login route', page.url().includes('#/'), page.url());
-  await expectText('Rider home renders', 'Find a Ride');
-  await expectText('Rider flow tabs render', 'Trip Date');
-
-  await page.locator('[data-find-step="DESTINATION"]').click();
-  await expectText('Destination step opens', 'Destination');
-  try {
-    await page.waitForFunction(() => document.querySelectorAll('.leaflet-container').length > 0, { timeout: 15000 });
-    record('Live map container renders', true, 'Leaflet container detected on direct file load');
-  } catch (error) {
-    record('Live map container renders', false, 'Leaflet container not detected');
+  loginEmail.value = 'daniel.rider@example.com';
+  loginPassword.value = '123456';
+  loginForm.dispatchSubmit();
+  if (!location.href.includes('./find-a-ride.html') || !location.href.includes('role=rider')) {
+    throw new Error('auth-flow.js did not route rider login to find-a-ride.html');
   }
 
-  await page.locator('[data-loc-query="destination"]').fill('Melbourne CBD');
-  await page.locator('button[data-action="loc-search"][data-scope="destination"]').click();
-  try {
-    await page.waitForFunction(() => document.querySelectorAll('button[data-action="loc-select"]').length > 0, { timeout: 20000 });
-    record('OpenStreetMap search results load', true, 'Location search returned selectable results');
-    await page.locator('button[data-action="loc-select"]').first().click();
-    await page.waitForTimeout(400);
-  } catch (error) {
-    record('OpenStreetMap search results load', false, 'Location search results did not appear');
+  loginEmail.value = 'emma.driver@example.com';
+  loginPassword.value = 'demo1234';
+  loginForm.dispatchSubmit();
+  if (!location.href.includes('./driver-hub.html') || !location.href.includes('role=driver')) {
+    throw new Error('auth-flow.js did not route driver login to driver-hub.html');
   }
 
-  await page.locator('[data-find-step="TRIP"]').click();
-  await expectText('Trip step opens', 'Confirm your ride search filters');
-  try {
-    await page.getByText('Departure time (optional)', { exact: false }).first().waitFor({ state: 'visible', timeout: 15000 });
-    await page.getByText('Time flexibility (0-6h)', { exact: false }).first().waitFor({ state: 'visible', timeout: 15000 });
-    await page.getByText('Passengers', { exact: false }).first().waitFor({ state: 'visible', timeout: 15000 });
-    record('Trip controls render on Trip step', true, 'Date, time, flexibility, and passenger controls are visible');
-  } catch (error) {
-    record('Trip controls render on Trip step', false, 'Expected Trip-step controls are missing');
+  registerRole.value = 'rider';
+  registerRole.dispatch('change');
+  registerName.value = 'Nina Rider';
+  registerEmail.value = 'nina.rider@example.com';
+  registerPhone.value = '0400 000 001';
+  registerSuburb.value = 'Clayton';
+  registerPassword.value = 'demo1234';
+  registerForm.dispatchSubmit();
+  if (!location.href.includes('./find-a-ride.html') || !location.href.includes('name=Nina+Rider')) {
+    throw new Error('auth-flow.js did not route rider registration to find-a-ride.html');
   }
 
-  await page.getByRole('button', { name: 'Back' }).click();
-  await expectText('Back button returns to destination step', 'Current origin');
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await page.getByRole('button', { name: 'Confirm Flow' }).click();
-  await page.waitForFunction(() => location.hash.startsWith('#/search-results'));
-  record('Search results route after confirm', page.url().includes('#/search-results'), page.url());
-  await expectText('Search results content renders', 'Matching Ride Offers');
-  await expectText('Search summary renders', 'Search Summary');
-  const searchResultCount = await page.locator('.results-grid .result-card').count();
-  record('Search results count >= 2', searchResultCount >= 2, `Matching ride offers shown: ${searchResultCount}`);
-
-  await page.getByRole('link', { name: 'View Details' }).first().click();
-  await page.waitForFunction(() => location.hash.startsWith('#/ride-offer-details/'));
-  await expectText('Offer details trust section renders', 'Driver trust');
-  await expectText('Offer details request form renders', 'Request This Ride');
-
-  await page.getByRole('button', { name: 'Request This Ride' }).click();
-  await page.waitForFunction(() => location.hash === '#/ride-confirmed');
-  await expectText('Join request confirmation page renders', 'Ride Request Submitted');
-  await page.getByRole('link', { name: 'Open My Trips' }).click();
-  await page.waitForFunction(() => location.hash === '#/my-trips');
-  await expectText('My Trips notifications section renders', 'Trip Confirmations and Notifications');
-  await expectText('My Trips unified orders section renders', 'My Unified Orders');
-  const riderNotificationCount = await countCardsInSection('Trip Confirmations and Notifications');
-  const riderUnifiedCount = await countCardsInSection('My Unified Orders');
-  record('Rider notifications count >= 2', riderNotificationCount >= 2, `Notifications shown: ${riderNotificationCount}`);
-  record('Rider unified orders count >= 2', riderUnifiedCount >= 2, `Unified order cards shown: ${riderUnifiedCount}`);
-
-  await page.locator('[data-action="trips-notification-filter"][data-value="ALL"]').click();
-  record('Notification filter buttons work', await textVisible('All'), 'Switched notification tab to All');
-  await page.locator('[data-action="trips-stage"][data-value="CONFIRMED"]').click();
-  await page.locator('[data-action="trips-path"][data-value="JOIN_REQUEST"]').click();
-  await expectText('My Trips filter buttons work', 'Join Request');
-
-  await gotoHash('#/account');
-  await expectText('Account page renders', 'Account Settings');
-  await page.locator('input[name="currentPassword"]').fill('123456');
-  await page.locator('input[name="newPassword"]').fill('12345678');
-  await page.locator('input[name="confirmPassword"]').fill('12345678');
-  await page.getByRole('button', { name: 'Reset Password' }).click();
-  await page.waitForTimeout(250);
-  record('Reset password button works', await textVisible('Password updated for Daniel Chen.'), 'Submitted password reset form');
-
-  await page.locator('input[name="last4"]').fill('9999');
-  await page.locator('input[name="expiry"]').fill('12/30');
-  await page.locator('select[name="primary"]').selectOption('YES');
-  await page.getByRole('button', { name: 'Save Payment Method' }).click();
-  await page.waitForTimeout(250);
-  record('Save payment method button works', await textVisible('Visa ending 9999 saved.'), 'Saved a new default payment method');
-  const riderPaymentMethodCount = await countCardsInSection('Payment Methods');
-  record('Rider payment methods count >= 2', riderPaymentMethodCount >= 2, `Payment methods shown: ${riderPaymentMethodCount}`);
-
-  await logoutIfVisible();
-  await loginFromFresh('emma.driver@example.com', 'demo1234');
-  await page.waitForFunction(() => location.hash === '#/driver-hub');
-  await expectText('Driver hub renders', 'Pending Join Requests');
-  await expectText('Driver one-off request section renders', 'Open One-Off Ride Requests');
-  const driverPendingCount = await countCardsInSection('Pending Join Requests');
-  const driverOpenRequestCount = await countCardsInSection('Open One-Off Ride Requests');
-  record('Driver pending join requests count >= 2', driverPendingCount >= 2, `Pending join requests shown: ${driverPendingCount}`);
-  record('Driver open one-off requests count >= 2', driverOpenRequestCount >= 2, `Open one-off requests shown: ${driverOpenRequestCount}`);
-
-  const joinForms = await page.locator('form[data-form="driver-join"]').count();
-  if (joinForms > 0) {
-    const joinForm = page.locator('form[data-form="driver-join"]').first();
-    await joinForm.locator('input[name="meetingPoint"]').fill('Clayton Station Gate 1');
-    await joinForm.getByRole('button', { name: 'Submit Decision' }).click();
-    await page.waitForTimeout(350);
-    record('Driver accept join request button works', await textVisible('accepted') || await textVisible('Join request #'), 'Driver submitted join request decision');
-  } else {
-    record('Driver accept join request button works', false, 'No driver join form available to test');
+  registerRole.value = 'driver';
+  registerRole.dispatch('change');
+  registerName.value = 'Casey Driver';
+  registerEmail.value = 'casey.driver@example.com';
+  registerPhone.value = '0400 000 002';
+  registerSuburb.value = 'Docklands';
+  registerPassword.value = 'demo1234';
+  registerForm.dispatchSubmit();
+  if (!location.href.includes('./driver-hub.html') || !location.href.includes('role=driver')) {
+    throw new Error('auth-flow.js did not route driver registration to driver-hub.html');
   }
+}
 
-  const oneOffForms = await page.locator('form[data-form="driver-request-offer"]').count();
-  if (oneOffForms > 0) {
-    const oneOffForm = page.locator('form[data-form="driver-request-offer"]').first();
-    await oneOffForm.locator('input[name="meetingPoint"]').fill('Monash North Loop');
-    await oneOffForm.getByRole('button', { name: 'Respond to Request' }).click();
-    await page.waitForTimeout(350);
-    record('Driver respond to request button works', await textVisible('submitted') || await textVisible('Offer #'), 'Driver submitted a one-off response');
-  } else {
-    record('Driver respond to request button works', false, 'No driver one-off response form available to test');
-  }
+expectContains('index.html', 'id="login-form"', 'login form');
+expectContains('index.html', 'id="login-email"', 'login email field');
+expectContains('index.html', 'id="login-password"', 'login password field');
+expectLink('index.html', 'Need an account? Register', 'register.html');
+expectContains('register.html', 'id="register-form"', 'register form');
+expectContains('register.html', 'id="register-role"', 'register role selector');
+expectContains('register.html', 'id="register-submit"', 'register submit button');
+expectLink('register.html', 'Back to Log In', 'index.html');
+expectContains('index.html', '<script src="./auth-flow.js"></script>', 'auth-flow script reference');
+expectContains('register.html', '<script src="./auth-flow.js"></script>', 'auth-flow script reference');
+expectLink('find-a-ride.html', 'Settings', 'rider-settings.html');
+expectLink('my-trips.html', 'Settings', 'rider-settings.html');
+expectLink('driver-hub.html', 'Settings', 'driver-settings.html');
+expectLink('driver-trip-workflow.html', 'Settings', 'driver-settings.html');
+expectContains('rider-settings.html', 'id="settings-password-form"', 'rider settings password form');
+expectContains('rider-settings.html', 'id="settings-payment-form"', 'rider settings payment form');
+expectContains('driver-settings.html', 'id="settings-password-form"', 'driver settings password form');
+expectContains('driver-settings.html', 'id="settings-payment-form"', 'driver settings payment form');
+expectContains('rider-settings.html', '<script src="./prototype-context.js"></script>', 'rider settings script reference');
+expectContains('driver-settings.html', '<script src="./prototype-context.js"></script>', 'driver settings script reference');
+expectContains('driver-accepted-details.html', '<script src="./prototype-context.js"></script>', 'accepted details script reference');
+expectContains('driver-rejected-details.html', '<script src="./prototype-context.js"></script>', 'rejected details script reference');
+expectContains('driver-decision-outcome.html', '<script src="./prototype-context.js"></script>', 'driver outcome script reference');
+expectLink('find-a-ride.html', 'Continue to Destination', 'find-a-ride.html#destination');
+expectLink('find-a-ride.html', 'Continue to Trip Date', 'find-a-ride.html#trip-date');
+expectLink('find-a-ride.html', 'Search Ride Offers', 'search-results.html');
+expectNotContains('find-a-ride.html', 'Fallback example', 'fallback example content');
+expectLink('search-results.html', 'View Details', 'ride-offer-details.html');
+expectContains('search-results.html', 'Rider Matching Failed', 'matching failed notice');
+expectLink('search-results.html', 'Start a New Search', 'find-a-ride.html');
+expectNotContains('search-results.html', 'Fallback path', 'fallback path content');
+expectLink('ride-offer-details.html', 'Submit Join Request', 'my-trips.html#join-request-submitted');
+expectContains('my-trips.html', 'Notifications', 'notifications section');
+expectContains('my-trips.html', 'Trip Records', 'trip records section');
+expectLink('my-trips.html', 'Open Trip Records', 'my-trips.html#trip-records');
+expectLink('my-trips.html', 'View Details', 'rider-record-501-details.html');
+expectLink('my-trips.html', 'View Details', 'rider-record-601-details.html');
+expectNotContains('my-trips.html', '<h2>Join Requests</h2>', 'legacy join requests standalone section');
+expectNotContains('my-trips.html', '<h2>Confirmed Trips</h2>', 'legacy confirmed trips standalone section');
+expectNotContains('my-trips.html', 'Fallback Requests', 'fallback requests section');
+expectNotContains('my-trips.html', 'Switch to Driver Hub', 'cross-role switch link');
+expectNotContains('my-trips.html', 'My Unified Orders', 'legacy orders title');
+expectContains('rider-record-501-details.html', 'Record #501', 'record 501 details page title');
+expectContains('rider-record-501-details.html', 'rider-record-501-map', 'record 501 map preview');
+expectLink('rider-record-501-details.html', 'Back to Trip Records', 'my-trips.html#trip-records');
+expectContains('rider-record-601-details.html', 'Record #601', 'record 601 details page title');
+expectContains('rider-record-601-details.html', 'rider-record-601-map', 'record 601 map preview');
+expectLink('rider-record-601-details.html', 'Back to Trip Records', 'my-trips.html#trip-records');
+expectLink('driver-hub.html', 'Accept Request', 'driver-decision-outcome.html');
+expectLink('driver-hub.html', 'Reject Request', 'driver-decision-outcome.html');
+expectContains('driver-hub.html', 'Driver Review', 'driver review title');
+expectContains('driver-hub.html', 'Join Request Review', 'join request review module');
+expectContains('driver-hub.html', 'request-map-frame', 'join request map preview');
+expectContains('driver-hub.html', 'Accepted', 'accepted records section');
+expectContains('driver-hub.html', 'Rejected', 'rejected records section');
+expectLink('driver-hub.html', 'Start Trip Workflow', 'driver-trip-workflow.html');
+expectLink('driver-hub.html', 'View Details', 'driver-accepted-details.html');
+expectLink('driver-hub.html', 'View Details', 'driver-rejected-details.html');
+expectNotContains('driver-hub.html', 'View Rider Confirmed Status', 'cross-role rider-status link');
+expectNotContains('driver-hub.html', 'Driver Hub', 'legacy driver hub title');
+expectNotContains('driver-hub.html', 'Trips', 'driver trips section');
+expectNotContains('driver-hub.html', 'Request Details', 'request details section');
+expectNotContains('driver-hub.html', 'Review Request Details', 'review request details action');
+expectNotContains('driver-hub.html', 'View Trips', 'view trips action');
+expectContains('driver-accepted-details.html', 'Accepted Join Request', 'accepted details title');
+expectLink('driver-accepted-details.html', 'Start Trip Workflow', 'driver-trip-workflow.html');
+expectLink('driver-accepted-details.html', 'Back to Driver Review', 'driver-hub.html#accepted-records');
+expectContains('driver-rejected-details.html', 'Rejected Join Request', 'rejected details title');
+expectLink('driver-rejected-details.html', 'Back to Driver Review', 'driver-hub.html#rejected-records');
+expectContains('driver-decision-outcome.html', 'Returning to Driver Review in 5 seconds', 'decision return note');
+expectLink('driver-decision-outcome.html', 'Back to Driver Review', 'driver-hub.html');
+expectContains('driver-trip-workflow.html', 'Driver Trip Workflow', 'driver trip workflow title');
+expectContains('driver-trip-workflow.html', 'workflow-map-main', 'single workflow map preview');
+expectContains('driver-trip-workflow.html', 'workflow-next-stage-link', 'single workflow action link');
+expectContains('driver-trip-workflow.html', 'Trip Completed', 'completed workflow panel');
+expectLink('driver-trip-workflow.html', 'Back', 'driver-hub.html#accepted-records');
+expectNotContains('driver-trip-workflow.html', 'Reset Workflow', 'removed reset action');
+expectNotContains('driver-trip-workflow.html', 'Back to Driver Review', 'removed verbose back action label');
+verifyAuthFlowScript();
 
-  await gotoHash('#/my-trips');
-  await expectText('Driver My Trips renders', 'Trip Filter');
-  await page.locator('[data-action="trips-trip-filter"][data-value="HISTORY"]').click();
-  await page.locator('[data-action="trips-trip-type"][data-value="ONE_OFF_REQUEST"]').click();
-  record('Driver My Trips filter buttons work', await textVisible('Trip Results') || await textVisible('My One-Off Offer History'), 'Driver trip filters were clicked successfully');
-  const driverOfferHistoryCount = await countCardsInSection('My One-Off Offer History');
-  record('Driver one-off offer history count >= 2', driverOfferHistoryCount >= 2, `Driver offer history shown: ${driverOfferHistoryCount}`);
-
-  await logoutIfVisible();
-  await loginFromFresh('daniel.rider@example.com', '12345678');
-  await gotoHash('#/my-trips');
-  await expectText('Rider can log in with reset password', 'My Unified Orders');
-  await page.locator('[data-action="trips-stage"][data-value="CONFIRMED"]').click();
-  record('Driver decision reflected for rider', await textVisible('CONFIRMED') || await textVisible('Accepted'), 'Rider confirmed-stage data is visible after driver action');
-
-  const paymentLinks = await page.getByRole('link', { name: 'Open Payment' }).count();
-  if (paymentLinks > 0) {
-    await page.getByRole('link', { name: 'Open Payment' }).first().click();
-  } else {
-    await gotoHash('#/payment?rideMatchId=401');
-  }
-  await expectText('Payment page still reachable after flow', 'Credit Card Checkout');
-  await page.locator('input[name="cardNumber"]').fill('4242424242424242');
-  await page.locator('input[name="expiry"]').fill('12/29');
-  await page.locator('input[name="cvv"]').fill('123');
-  await page.getByRole('button', { name: 'Pay Now (Demo)' }).click();
-  await page.waitForTimeout(250);
-  record('Payment submit button works', await textVisible('Demo payment completed') || await textVisible('Payment completed'), 'Payment form was submitted');
-
-  await logoutIfVisible();
-  await loginFromFresh('maria.rider@example.com', 'demo1234');
-  await gotoHash('#/ride-requests/201/offers');
-  await expectText('Maria one-off offer review page renders', 'Available Driver Offers');
-  const mariaOfferReviewCount = await countCardsInSection('Available Driver Offers');
-  record('Maria review offers count >= 2', mariaOfferReviewCount >= 2, `Driver offers shown: ${mariaOfferReviewCount}`);
-  const acceptOfferButtons = await page.getByRole('button', { name: 'Accept This Offer' }).count();
-  if (acceptOfferButtons > 0) {
-    await page.getByRole('button', { name: 'Accept This Offer' }).first().click();
-    await page.waitForFunction(() => location.hash === '#/ride-confirmed');
-    record('Rider accept driver offer button works', await textVisible('One-Off Ride Matched'), 'Maria accepted a driver offer');
-  } else {
-    record('Rider accept driver offer button works', false, 'No pending driver offer button available');
-  }
-
-  await gotoHash('#/tutorial');
-  await expectText('Tutorial page still reachable', 'Tutorial Training Center');
-  await page.locator('[data-action="tutorial-track"][data-track="DRIVER"]').click();
-  await page.locator('[data-action="tutorial-mode"][data-mode="QUIZ"]').click();
-  await page.locator('input[data-quiz-id]').first().check();
-  await page.getByRole('button', { name: 'Submit Answers' }).click();
-  await page.waitForTimeout(250);
-  record('Tutorial quiz submit button works', await textVisible('Score:'), 'Tutorial quiz submitted and scored');
-  await page.locator('[data-action="tutorial-mode"][data-mode="GUIDED"]').click();
-  const checklist = page.locator('input[data-check-index]').first();
-  await checklist.check();
-  await page.waitForTimeout(150);
-  record('Tutorial checklist works', await textVisible('Progress'), 'Tutorial checklist interaction succeeded');
-
-  await browser.close();
-  const failed = results.filter((item) => !item.ok);
-  console.log(JSON.stringify({ ok: failed.length === 0, failedCount: failed.length, results }, null, 2));
-  process.exit(failed.length === 0 ? 0 : 1);
-})().catch(async (error) => {
-  console.error(error && error.stack ? error.stack : String(error));
-  process.exit(1);
-});
+console.log('Verified rider and driver button flows plus login/register form surfaces across the static prototype.');

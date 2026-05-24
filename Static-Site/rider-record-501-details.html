@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Record #501 Details - NeighbourLink Static Prototype</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./find-a-ride.html">
+          <span class="brand-mark">NL</span>
+          <span>
+            <strong>NeighbourLink</strong>
+            <span class="brand-subtitle">Reduced-Budget Stage 2 Prototype</span>
+          </span>
+        </a>
+        <nav class="nav-links">
+  <a class="nav-link " href="./find-a-ride.html">Find a Ride</a>
+  <a class="nav-link is-active" href="./my-trips.html">My Trips</a>
+  <a class="nav-link " href="./rider-settings.html">Settings</a>
+  <a class="nav-link" href="./index.html">Log Out</a>
+</nav>
+      </div>
+    </header>
+    <main class="page-wrap">
+      <section class="hero-card">
+        <span class="eyebrow">Rider Prototype Surface</span>
+        <h1>Record #501 Details</h1>
+        <p>This page shows the full rider-visible details for record #501, including an OpenStreetMap preview of the trip context.</p>
+      </section>
+      <section class="panel anchor-section" id="record-501-details">
+  <span class="pill pending" id="rider-record-501-pill">In Progress</span>
+  <h2 id="rider-record-501-title">Record #501</h2>
+  <div class="request-summary-grid">
+    <div class="summary-box">
+      <p><strong>Record ID:</strong> <span id="rider-record-501-id">#501</span></p>
+      <p><strong>Record Type:</strong> <span id="rider-record-501-type">Join Request</span></p>
+      <p><strong>Current Status:</strong> <span id="rider-record-501-status">Pending driver decision</span></p>
+    </div>
+    <div class="summary-box">
+      <p><strong>Driver:</strong> <span id="rider-record-501-driver">Emma Driver</span></p>
+      <p><strong>Route:</strong> <span id="rider-record-501-route">Clayton to Melbourne CBD</span></p>
+      <p><strong>Requested Seats:</strong> <span id="rider-record-501-seats">1</span></p>
+    </div>
+    <div class="summary-box">
+      <p><strong>Timeline:</strong> Submitted and waiting for driver review.</p>
+      <p><strong>Outcome hint:</strong> You will see accepted or rejected status in My Trips notifications.</p>
+      <p><strong>Navigation:</strong> Return to My Trips after review.</p>
+    </div>
+  </div>
+  <div class="request-map-wrap">
+    <p class="map-caption">OpenStreetMap trip preview (Origin to Destination)</p>
+    <iframe class="map-frame request-map-frame" id="rider-record-501-map" title="Record 501 trip preview map" loading="lazy"></iframe>
+  </div>
+  <div class="card-actions">
+    <a class="btn" id="rider-record-501-back-link" href="./my-trips.html#trip-records">Back to Trip Records</a>
+  </div>
+</section>
+    </main>
+  </div>
+  <script src="./prototype-context.js"></script>
+</body>
+</html>

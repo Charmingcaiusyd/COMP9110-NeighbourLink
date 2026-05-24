@@ -1,0 +1,79 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ride Offer Details - NeighbourLink Static Prototype</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./find-a-ride.html">
+          <span class="brand-mark">NL</span>
+          <span>
+            <strong>NeighbourLink</strong>
+            <span class="brand-subtitle">Reduced-Budget Stage 2 Prototype</span>
+          </span>
+        </a>
+        <nav class="nav-links">
+  <a class="nav-link is-active" href="./find-a-ride.html">Find a Ride</a>
+  <a class="nav-link " href="./my-trips.html">My Trips</a>
+  <a class="nav-link " href="./rider-settings.html">Settings</a>
+  <a class="nav-link" href="./index.html">Log Out</a>
+</nav>
+      </div>
+    </header>
+    <main class="page-wrap">
+      <section class="hero-card">
+        <span class="eyebrow">Rider Prototype Surface</span>
+        <h1>Ride Offer Details</h1>
+        <p>The rider reviews route fit, available seats, and meeting details before submitting a join request.</p>
+      </section>
+      <section class="two-column">
+  <section class="panel">
+    <h2>Selected offer</h2>
+    <div class="summary-box">
+      <p><strong>Driver:</strong> <span id="offer-driver">Emma Driver</span></p>
+      <p><strong>Route:</strong> <span id="offer-route">Clayton to Melbourne CBD</span></p>
+      <p><strong>Departure:</strong> <span id="offer-departure">2026-04-09 at 07:30</span></p>
+      <p><strong>Available seats:</strong> <span id="offer-seats">2</span></p>
+      <p><strong>Vehicle:</strong> <span id="offer-vehicle">Silver Toyota Corolla</span></p>
+      <p><strong>Pickup point:</strong> <span id="offer-pickup">Clayton Station Gate 2</span></p>
+    </div>
+    <div class="form-grid">
+      <label>Seats requested
+        <select id="details-passengers">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+        </select>
+      </label>
+      <label>Message to driver<textarea id="details-message">Heading into the CBD for work and happy to meet at Gate 2 by 7:20 AM.</textarea></label>
+      <div class="form-actions">
+        <a class="btn" id="submit-join-request-link" href="./my-trips.html#join-request-submitted">Submit Join Request</a>
+        <a class="btn btn-secondary" id="back-to-results-link" href="./search-results.html">Back to Results</a>
+      </div>
+    </div>
+  </section>
+  <aside class="panel">
+    <div class="card">
+      <p><strong>Your search context</strong></p>
+      <p class="muted"><span id="details-search-route">Clayton to Melbourne</span> on <span id="details-search-date">2026-04-09</span> for <span id="details-search-passengers">1</span> passenger.</p>
+    </div>
+    <h2>Decision support shown to rider</h2>
+    <div class="card">
+      <p><strong>Seat availability is visible</strong></p>
+      <p class="muted">The rider can see whether enough seats remain before making the request.</p>
+    </div>
+    <div class="card">
+      <p><strong>Pickup context is visible</strong></p>
+      <p class="muted">The rider can judge whether the meeting arrangement fits the trip without opening extra flows.</p>
+    </div>
+  </aside>
+</section>
+    </main>
+  </div>
+  <script src="./prototype-context.js"></script>
+</body>
+</html>

@@ -1,25 +1,60 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NeighbourLink Static Demo</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f766e'/%3E%3Cpath d='M18 34c5-8 10-12 14-12s8 4 14 12' fill='none' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='42' r='5' fill='white'/%3E%3Ccircle cx='42' cy='42' r='5' fill='white'/%3E%3C/svg%3E">
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  >
+  <title>Log In - NeighbourLink Static Prototype</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div id="app"></div>
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
-  <script src="./app.js" defer></script>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark">NL</span>
+          <span>
+            <strong>NeighbourLink</strong>
+            <span class="brand-subtitle">Reduced-Budget Stage 2 Prototype</span>
+          </span>
+        </a>
+        <nav class="nav-links">
+  <a class="nav-link is-active" href="./index.html">Log In</a>
+  <a class="nav-link " href="./register.html">Register</a>
+</nav>
+      </div>
+    </header>
+    <main class="page-wrap">
+      <section class="hero-card">
+        <span class="eyebrow">Public Prototype Surface</span>
+        <h1>Log In</h1>
+        <p>Use a simple sign-in form to enter the Rider or Driver walkthrough without adding backend complexity to the static prototype.</p>
+      </section>
+      <section class="panel">
+  <h2>Demo Sign In</h2>
+  <p class="muted">Enter a demo Rider or Driver account. Lightweight client-side logic sends the sign-in to the matching static walkthrough.</p>
+  <form class="auth-grid" id="login-form" action="./find-a-ride.html" method="get">
+    <div class="field-row">
+      <label>Email<input id="login-email" name="email" type="email" value="daniel.rider@example.com" required></label>
+      <label>Password<input id="login-password" name="password" type="password" value="123456" required></label>
+    </div>
+    <div class="form-actions">
+      <button class="btn" id="login-submit" type="submit">Log In</button>
+      <a class="btn btn-secondary" href="./register.html">Need an account? Register</a>
+    </div>
+  </form>
+  <div class="demo-account-list" aria-label="Demo accounts">
+    <article class="demo-account-item">
+      <strong>Rider demo</strong>
+      <span><code>daniel.rider@example.com</code> / <code>123456</code></span>
+    </article>
+    <article class="demo-account-item">
+      <strong>Driver demo</strong>
+      <span><code>emma.driver@example.com</code> / <code>demo1234</code></span>
+    </article>
+  </div>
+</section>
+    </main>
+  </div>
+  <script src="./auth-flow.js"></script>
 </body>
 </html>

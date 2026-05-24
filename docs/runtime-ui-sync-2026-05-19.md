@@ -1,47 +1,55 @@
-# Runtime UI Sync (2026-05-19)
+﻿# Runtime and Prototype UI Sync - 2026-05-23
 
-This note records the current implemented UI behavior so docs stay aligned with the runnable app.
+This note records the current `Static-Site` submission-facing UI direction.
 
-## 1) Rider Entry Flow
-- Primary rider entry remains `/` (`Find a Ride`).
-- Dedicated rider `Post a Ride Request` entry is removed from primary navigation.
-- Legacy `/post-ride-request` route is redirected to `/`.
+## Final prototype shape
 
-Auto routing after rider confirms filters:
-- `departureTime` missing -> auto-create one-off request
-- trip time more than 3 hours away -> auto-create one-off request
-- trip time within 3 hours -> search open ride offers first
-- within-3-hour search with no results -> auto-create one-off request
+`Static-Site` is now a compact static multi-page HTML/CSS prototype rather than a script-driven single-page demo.
 
-All auto-created requests redirect to `/my-trips` and are visible in rider history.
+It now opens through:
 
-## 2) My Trips Presentation
-- `/my-trips` keeps notifications in a dedicated notification section.
-- Non-notification rider records are unified into `My Unified Orders`.
-- `My Unified Orders` is rendered as a card timeline (newest first), not a table.
-- Filters retained:
-  - Stage: `IN_PROGRESS | CONFIRMED | CLOSED | ALL`
-  - Path: `ALL | JOIN | ONE_OFF`
-- Card actions retained:
-  - `Review Offers` (one-off request)
-  - `Cancel` (open one-off request)
-  - `Payment` (for matched records)
+- `Static-Site/index.html`
 
-## 3) Payment Page (Demo Only)
-- Frontend route: `/payment`
-- Purpose: display a simple credit-card template for demo interaction.
-- No backend payment processing is used.
+## Primary rider flow
 
-## 4) Account Settings
-- Top navigation includes `Account` between `My Trips` and `Log Out`.
-- `Account` page only keeps:
-  - reset-password panel (calls backend password reset API)
-  - payment method management (add/remove/default)
-- Payment method preferences are stored in browser `localStorage` per user.
+The rider-facing path is:
 
-## 5) Scope Clarification
-- These changes are UI/runtime orchestration and demo-surface enhancements.
-- Core backend use case APIs remain:
-  - ride offer search/detail
-  - join request submit/decision/history
-  - one-off request create/offer/accept/cancel/history
+1. `index.html`
+2. `find-a-ride.html`
+3. `search-results.html`
+4. `ride-offer-details.html`
+5. `my-trips.html`
+
+## Reduced fallback path
+
+The rider fallback example is now shown inside anchored sections of `my-trips.html` rather than on a separate page.
+
+This path is retained only as a reduced rider-visible record.
+
+## Driver flow
+
+The driver-facing path is:
+
+1. `index.html`
+2. `driver-hub.html`
+
+## Scope intentionally removed from the final prototype surface
+
+The current submission-facing `Static-Site` no longer includes:
+
+- account settings
+- payment pages
+- tutorial centre
+- trust / rating
+- one-off driver response
+- rider acceptance of driver one-off offers
+- a duplicate driver `Find a Ride` surface
+- live embedded mapping
+
+It also no longer relies on separate HTML files for each rider filter state inside `My Trips`.
+It also no longer relies on separate HTML files for the three rider setup stages.
+It also no longer relies on separate HTML files for driver decisions or driver history.
+
+## Alignment judgement
+
+The current static pages, reduced UML appendix, and report-replacement notes should now be treated as the main authoritative submission set.

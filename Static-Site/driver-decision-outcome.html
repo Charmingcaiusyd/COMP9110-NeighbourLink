@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver Decision Outcome - NeighbourLink Static Prototype</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./driver-hub.html">
+          <span class="brand-mark">NL</span>
+          <span>
+            <strong>NeighbourLink</strong>
+            <span class="brand-subtitle">Reduced-Budget Stage 2 Prototype</span>
+          </span>
+        </a>
+        <nav class="nav-links">
+  <a class="nav-link is-active" href="./driver-hub.html">Driver Review</a>
+  <a class="nav-link " href="./driver-trip-workflow.html">Trip Workflow</a>
+  <a class="nav-link " href="./driver-settings.html">Settings</a>
+  <a class="nav-link" href="./index.html">Log Out</a>
+</nav>
+      </div>
+    </header>
+    <main class="page-wrap">
+      <section class="hero-card">
+        <span class="eyebrow">Driver Prototype Surface</span>
+        <h1>Driver Decision Outcome</h1>
+        <p>Accepting or rejecting a pending join request now opens a dedicated result page, shows the full details, and returns to Driver Review after 5 seconds.</p>
+      </section>
+      <section class="panel">
+  <span class="pill pending" id="decision-outcome-pill">Pending</span>
+  <h2 id="decision-outcome-title">Driver Decision</h2>
+  <p id="decision-outcome-message">The selected join request has been processed.</p>
+  <div class="request-summary-grid">
+    <div class="summary-box">
+      <p><strong>Join Request:</strong> <span id="decision-request-id">#501</span></p>
+      <p><strong>Rider:</strong> <span id="decision-rider">Daniel Rider</span></p>
+      <p><strong>Driver:</strong> <span id="decision-driver">Emma Driver</span></p>
+    </div>
+    <div class="summary-box">
+      <p><strong>Route:</strong> <span id="decision-route">Clayton to Melbourne CBD</span></p>
+      <p><strong>Seats:</strong> <span id="decision-seats">1</span></p>
+      <p><strong>Available seats before decision:</strong> <span id="decision-available">2</span></p>
+    </div>
+    <div class="summary-box">
+      <p><strong>Next visible state:</strong> <span id="decision-next-state">Driver Review updates this request history after the decision.</span></p>
+      <p class="muted" id="decision-return-note">Returning to Driver Review in 5 seconds...</p>
+      <p><strong>Countdown:</strong> <span id="decision-countdown">5</span>s</p>
+    </div>
+  </div>
+  <div class="card-actions">
+    <a class="btn" id="decision-back-link" href="./driver-hub.html">Back to Driver Review</a>
+  </div>
+</section>
+    </main>
+  </div>
+  <script src="./prototype-context.js"></script>
+</body>
+</html>
